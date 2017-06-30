@@ -136,7 +136,7 @@ class GreatArc(object):
 
         # Inner angle between v1 and v2 in radians
         self.inner_angle = np.arctan2(np.linalg.norm(np.cross(self.v1, self.v2)),
-                                      np.dot(self.v1, self.v2)) * u.rad
+                                        np.dot(self.v1, self.v2)) * u.rad
 
         # Radius of the sphere
         self.radius = self._r * self.distance_unit
@@ -238,6 +238,31 @@ class GreatArc(object):
             start point.
 
         """
+        return self.cartesian_coordinates(points=points).transform_to(self.start_frame)
+
+    def cartesian_coordinates(self, points=None):
+        """
+        Calculates the co-ordinates on the sphere from the start to the end
+        co-ordinate for all the parameterized points.  Co-ordinates are
+        returned in the Cartesian co-ordinate frame.
+
+        Parameters
+        ----------
+        points : `None`, `int`, `~numpy.ndarray`
+            If None, use the default locations of parameterized points along the
+            arc.  If int, the arc is calculated at "points" equally spaced
+            points from start to end.  If a numpy.ndarray is passed, it must be
+            one dimensional and have values >=0 and <=1.  The values in this
+            array correspond to parameterized locations along the great arc from
+            zero, denoting the start of the arc, to 1, denoting the end of the
+            arc.
+
+        Returns
+        -------
+        arc : `~astropy.coordinates.SkyCoord`
+            Co-ordinates along the great arc in the Cartesian co-ordinate frame.
+
+        """
         # Calculate the inner angles
         these_inner_angles = self.inner_angles(points=points)
 
@@ -251,4 +276,33 @@ class GreatArc(object):
         return SkyCoord(great_arc_points_cartesian[:, 0],
                         great_arc_points_cartesian[:, 1],
                         great_arc_points_cartesian[:, 2],
-                        frame=frames.Heliocentric, observer=self.observer).transform_to(self.start_frame)
+                        frame=frames.Heliocentric,
+                        observer=self.observer)
+
+
+class GreatCircle(GreatArc):
+    def __init__(self, ):
+        GreatArc.__init__(self, )
+        self.inner_angle = 2 * np.pi * u.rad
+
+    def front_sided(self, points=None):
+        cc = self.cartesian_coordinates(points=points)
+        return np.where(cc.z > 0)
+
+    def back_sided(self, points=None):
+        cc = self.cartesian_coordinates(points=points)
+        return np.where(cc.z < 0)
+
+    def limb(self, tolerance=0*u.km, points=None):
+        cc = self.cartesian_coordinates(points=points)
+        return np.where(np.abs(cc.z) < tolerance)
+
+    def reorder(self):
+        """
+        Re-order the co-ordinates so that the co-ordinates go from one limb to
+        the other.
+
+        Returns
+        -------
+
+        """
