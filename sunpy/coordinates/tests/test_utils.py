@@ -11,7 +11,7 @@ from sunpy.sun import sun
 import sunpy.map
 import sunpy.data.test
 from sunpy.coordinates import frames
-from sunpy.coordinates.utils import GreatArc
+from sunpy.coordinates.utils import GreatArc, GreatCircle
 
 
 # Test the great arc code against calculable quantities
@@ -163,3 +163,7 @@ def test_great_arc_points_differentiates():
     assert len(coordinates) == 10 and len(gc.coordinates()) == 100
     assert len(inner_angles) == 11 and len(gc.inner_angles()) == 100
     assert len(distances) == 12 and len(gc.distances()) == 100
+
+
+# Test the great circle code against calculable quantities
+# TODO: write tests for the great circle code

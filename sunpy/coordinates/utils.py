@@ -11,7 +11,7 @@ from astropy.coordinates import SkyCoord
 
 from sunpy.coordinates import frames
 
-__all__ = ['GreatArc']
+__all__ = ['GreatArc', 'GreatCircle']
 
 
 class GreatArc(object):
@@ -281,28 +281,100 @@ class GreatArc(object):
 
 
 class GreatCircle(GreatArc):
-    def __init__(self, ):
-        GreatArc.__init__(self, )
+    def __init__(self, start, end, center=None, points=None):
+        """
+        Calculate the properties of a great circle at user-specified points
+        The great circle passes through two points on a sphere specified by
+        the user.  The points returned are in the direction from the start point
+        through the end point.
+
+        Parameters
+        ----------
+        start : `~astropy.coordinates.SkyCoord`
+            Start point.
+
+        end : `~astropy.coordinates.SkyCoord`
+            End point.
+
+        center : `~astropy.coordinates.SkyCoord`
+            Center of the sphere.
+
+        points : `None`, `int`, `~numpy.ndarray`
+            Number of points along the great arc.  If None, the arc is calculated
+            at 100 equally spaced points from start to end.  If int, the arc is
+            calculated at "points" equally spaced points from start to end.  If a
+            numpy.ndarray is passed, it must be one dimensional and have values
+            >=0 and <=1.  The values in this array correspond to parameterized
+            locations along the great arc from zero, denoting the start of the arc,
+            to 1, denoting the end of the arc.  Setting this keyword on initializing
+            a GreatArc object sets the locations of the default points along the
+            great arc.
+
+        Methods
+        -------
+        inner_angles : `~astropy.units.rad`
+            Radian angles of the points along the great arc from the start to end
+            co-ordinate.
+
+        distances : `~astropy.units`
+            Distances of the points along the great arc from the start to end
+            co-ordinate.  The units are defined as those returned after transforming
+            the co-ordinate system of the start co-ordinate into its Cartesian
+            equivalent.
+
+        coordinates : `~astropy.coordinates.SkyCoord`
+            Co-ordinates along the great arc in the co-ordinate frame of the
+            start point.
+
+        References
+        ----------
+        [1] https://www.mathworks.com/matlabcentral/newsreader/view_thread/277881
+        [2] https://en.wikipedia.org/wiki/Great-circle_distance#Vector_version
+
+        Example
+        -------
+        >>> import matplotlib.pyplot as plt
+        >>> from astropy.coordinates import SkyCoord
+        >>> import astropy.units as u
+        >>> from sunpy.coordinates.utils import GreatCircle
+        >>> import sunpy.map
+        >>> from sunpy.data.sample import AIA_171_IMAGE
+        >>> m = sunpy.map.Map(AIA_171_IMAGE)
+        >>> a = SkyCoord(600*u.arcsec, -600*u.arcsec, frame=m.coordinate_frame)
+        >>> b = SkyCoord(-100*u.arcsec, 800*u.arcsec, frame=m.coordinate_frame)
+        >>> great_circle = GreatCircle(a, b)
+        >>> coordinates = great_circle.coordinates(points=1000)
+        >>> front_arc_coordinates = coordinates[great_circle.front_arc_indices]
+        >>> back_arc_coordinates = coordinates[great_circle.back_arc_indices]
+        >>> arc_from_start_to_back = coordinates[0:great_circle.from_front_to_back_index]
+        >>> arc_from_back_to_start = coordinates[great_circle.from_back_to_front_index: len(coordinates)-1]
+        >>> ax = plt.subplot(projection=m)
+        >>> m.plot(axes=ax)
+        >>> ax.plot_coord(front_arc_coordinates, color='k', linewidth=5)
+        >>> ax.plot_coord(back_arc_coordinates, color='k', linestyle=":")
+        >>> ax.plot_coord(arc_from_start_to_back, color='c')
+        >>> ax.plot_coord(arc_from_back_to_start, color='r')
+        >>> plt.show()
+        """
+        GreatArc.__init__(self, start, end, center=center, points=points)
+
+        # Set the inner angle to be 2*pi radians, the full circle.
         self.inner_angle = 2 * np.pi * u.rad
 
-    def front_sided(self, points=None):
-        cc = self.cartesian_coordinates(points=points)
-        return np.where(cc.z > 0)
+        # Boolean array indicating which coordinate is on the front of the disk
+        # (True) or on the back (False).
+        self.front_or_back = self.cartesian_coordinates().z.value > 0
 
-    def back_sided(self, points=None):
-        cc = self.cartesian_coordinates(points=points)
-        return np.where(cc.z < 0)
+        # Calculate the indices where the co-ordinates change from being on the
+        # front of the disk to the back to the disk.
+        self._fob = self.front_or_back.astype(np.int)
+        self._change = self._fob[1:] - self._fob[0:-1]
+        self.from_front_to_back_index = np.where(self._change == -1)[0][0]
+        self.from_back_to_front_index = np.where(self._change == 1)[0][0]
 
-    def limb(self, tolerance=0*u.km, points=None):
-        cc = self.cartesian_coordinates(points=points)
-        return np.where(np.abs(cc.z) < tolerance)
+        # Indices of arcs on the front side and the back
+        self.front_arc_indices = np.concatenate((np.arange(self.from_back_to_front_index, len(self.coordinates())),
+                                                 np.arange(0, self.from_front_to_back_index)))
 
-    def reorder(self):
-        """
-        Re-order the co-ordinates so that the co-ordinates go from one limb to
-        the other.
-
-        Returns
-        -------
-
-        """
+        self.back_arc_indices = np.arange(self.from_front_to_back_index + 1,
+                                          self.from_back_to_front_index)
