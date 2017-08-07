@@ -10,12 +10,28 @@ from sunpy.time import parse_time
 
 #
 # Functions that convert the string values of the dictionary keys in to the
-# relevant SunPy objects.
+# relevant SunPy objects.  The function names are the same as the keys in the
+# HEK response dictionary.
 #
 def hpc_boundcc(hek_dictionary, event_measurement_time='event_starttime'):
     """
     Parses the Helioprojective Cartesian boundary coordinates and returns
     SkyCoords.
+
+    Parameters
+    ----------
+
+    hek_dictionary : `dict`
+        A HEK response dictionary
+
+    event_measurement_time : `str`
+        The time at which the event properties were measured.
+
+    Returns
+    -------
+    event boundary : `~astropy.coordinates.SkyCoord`
+        The boundary of the event.
+
     """
     p1 = hek_dictionary["hpc_boundcc"][9: -2]
     p2 = p1.split(',')
