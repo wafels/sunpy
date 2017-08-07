@@ -5,7 +5,7 @@ Each of the Geostationary Operational Environmental Satellite (GOES) series
 since the mid-1970s has carried an X-Ray Sensor (XRS) which observes
 full-disk-integrated solar flux in two broadband channels:
 1--8 angstrom (long); and 0.5--4 angstrom (short).  For more information on
-the GOES/XRS instrument, see Hanser & Sellers (1996).  GOES/XRS has become
+the GOES/XRS instrument, see [Ref1]_.  GOES/XRS has become
 the "standard candle" for solar coronal observations due its longevity and
 consistency.  The GOES event list, based on GOES/XRS observations, has
 become the standard solar flare catalogue.
@@ -23,7 +23,7 @@ calls _goes_get_chianti_temp() and _goes_get_chianti_em().  These two
 functions currently rely on lookup tables relating the GOES fluxes to the
 isothermal temperature and volume emission measure.  These tables were
 calculated by functions in SolarSoftWare (SSW) using the CHIANTI atomic
-physics database (Dere et al. 2009). For more detail, see the docstring of
+physics database ([Ref2]_). For more detail, see the docstring of
 calculate_temperature_em() and references therein.
 
 The radiative loss rate of the soft X-ray-emitting plasma across all
@@ -41,8 +41,9 @@ _goes_lx() and calc_xraylum().
 
 References
 ----------
-Hanser, F.A., & Sellers, F.B. 1996, Proc. SPIE, 2812, 344
-Dere, K.P., et al. 2009 A&A, 498, 915 DOI: 10.1051/0004-6361/200911712
+
+.. [Ref1] Hanser, F.A., & Sellers, F.B. 1996, Proc. SPIE, 2812, 344
+.. [Ref2] Dere, K.P., et al. 2009 A&A, 498, 915 DOI: 10.1051/0004-6361/200911712
 
 """
 
@@ -68,6 +69,7 @@ from sunpy import lightcurve
 from sunpy.util.net import check_download_file
 from sunpy.util.config import get_and_create_download_dir
 from sunpy import sun
+from sunpy.coordinates import get_sunearth_distance
 
 GOES_CONVERSION_DICT = {'X': u.Quantity(1e-4, "W/m^2"),
                         'M': u.Quantity(1e-5, "W/m^2"),
@@ -203,8 +205,8 @@ def calculate_temperature_em(goeslc, abundances="coronal",
     of the short (0.5-4 angstrom) to long (1-8 angstrom) channels of the
     XRSs onboard various GOES satellites.  This method assumes an
     isothermal plasma, the ionisation equilibria of
-    Mazzotta et al. (1998), and a constant density of 10**10 cm**-3.
-    (See White et al. 2005 for justification of this last assumption.)
+    [2]_, and a constant density of 10**10 cm**-3.
+    (See [1]_ for justification of this last assumption.)
     This function is based on goes_chianti_tem.pro in SolarSoftWare
     written in IDL by Stephen White.
 
@@ -331,12 +333,12 @@ def _goes_chianti_tem(longflux, shortflux, satellite=8,
     Notes
     -----
     The temperature and volume emission measure are calculated here
-    using the methods of White et al. (2005) who used the
+    using the methods of [1]_ who used the
     CHIANTI atomic physics database to model the response of the ratio
     of the short (0.5-4 angstrom) to long (1-8 angstrom) channels of the
     XRSs onboard various GOES satellites.  This method assumes an
     isothermal plasma, the ionisation equilibria of
-    Mazzotta et al. (1998), and a constant density of 10**10 cm**-3.
+    [2]_, and a constant density of 10**10 cm**-3.
     (See White et al. 2005 for justification of this last assumption.)
     This function is based on goes_chianti_tem.pro in SolarSoftWare
     written in IDL by Stephen White.
@@ -478,12 +480,12 @@ def _goes_get_chianti_temp(fluxratio, satellite=8, abundances="coronal",
     goes_chianti_temp_pho.csv is used when photospheric abundances are
     assumed.  (See make_goes_chianti_temp.py for more detail.)
 
-    These files were calculated using the methods of White et al. (2005)
+    These files were calculated using the methods of [1]_
     who used the CHIANTI atomic physics database to model the response
     of the ratio of the short (0.5-4 angstrom) to long (1-8 angstrom)
     channels of the XRSs onboard various GOES satellites.  This method
     assumes an isothermal plasma, the ionisation equilibria of
-    Mazzotta et al. (1998), and a constant density of 10**10 cm**-3.
+    [2]_, and a constant density of 10**10 cm**-3.
     (See White et al. 2005 for justification of this last assumption.)
     This function is based on goes_get_chianti_temp.pro in
     SolarSoftWare written in IDL by Stephen White.
@@ -789,9 +791,9 @@ def calculate_radiative_loss_rate(goeslc, force_download=False,
     a table of radiative loss rate per unit emission measure at various
     temperatures.  The appropriate values are then found via interpolation.
     This table was generated using CHIANTI atomic physics database employing
-    the methods of Cox & Tucker (1969).  Coronal abundances, a default
+    the methods of [1]_.  Coronal abundances, a default
     density of 10**10 cm**-3, and ionization equilibrium of
-    Mazzotta et al. (1998) were used.
+    [2]_ were used.
 
     References
     ----------
@@ -1271,7 +1273,7 @@ def _calc_xraylum(flux, date=None):
     """
     if date is not None:
         date = parse_time(date)
-        xraylum = 4 * np.pi * sun.sun.sunearth_distance(t=date).to("m")**2 * flux
+        xraylum = 4 * np.pi * get_sunearth_distance(date).to("m")**2 * flux
     else:
         xraylum = 4 * np.pi * sun.constants.au.to("m")**2 * flux
     return xraylum

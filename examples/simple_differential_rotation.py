@@ -21,10 +21,11 @@ from datetime import timedelta
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
+from astropy.coordinates import SkyCoord
 
 import sunpy.map
 import sunpy.data.sample
-from sunpy.physics.differential_rotation import diff_rot, rot_hpc
+from sunpy.physics.differential_rotation import diff_rot, solar_rotate_coordinate
 
 ##############################################################################
 # Next lets explore solar differential rotation by replicating Figure 1
@@ -59,13 +60,15 @@ future_date = aia_map.date + dt
 ##############################################################################
 # Now let's plot the original and rotated positions on the AIA map.
 fig = plt.figure()
-ax = plt.subplot()
+ax = plt.subplot(projection=aia_map)
 aia_map.plot()
 ax.set_title('The effect of {0} days of differential rotation'.format(dt.days))
 aia_map.draw_grid()
 for this_hpc_x, this_hpc_y in zip(hpc_x, hpc_y):
-    new_hpc_x, new_hpc_y = rot_hpc(this_hpc_x, this_hpc_y, aia_map.date, future_date)
-    plt.plot([this_hpc_x.value, new_hpc_x.value], [this_hpc_y.value, new_hpc_y.value], 'o-')
-plt.ylim(-1000, 1000)
-plt.xlim(-1000, 1000)
+    start_coord = SkyCoord(this_hpc_x, this_hpc_y, frame=aia_map.coordinate_frame)
+    rotated_coord = solar_rotate_coordinate(start_coord, future_date)
+    coord = SkyCoord([start_coord.Tx, rotated_coord.Tx], [start_coord.Ty, rotated_coord.Ty], frame=aia_map.coordinate_frame)
+    ax.plot_coord(coord, 'o-')
+plt.ylim(0, aia_map.data.shape[1])
+plt.xlim(0, aia_map.data.shape[0])
 plt.show()
