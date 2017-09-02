@@ -72,10 +72,10 @@ class GreatArc(object):
         Boolean array indicating which coordinates are on the front or the back
         of the sphere as seen by the observer.
 
-    front_arc_indices: ``
+    front_arc_indices: `~numpy.ndarray`
 
 
-    back_arc_indices : ``
+    back_arc_indices : `~numpy.ndarray`
 
 
     from_front_to_back_index : `int`

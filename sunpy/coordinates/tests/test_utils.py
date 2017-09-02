@@ -65,9 +65,9 @@ def test_great_arc_coordinates(points_requested, points_expected, first_point,
     a = SkyCoord(600*u.arcsec, -600*u.arcsec, frame=coordinate_frame)
     b = SkyCoord(-100*u.arcsec, 800*u.arcsec, frame=coordinate_frame)
     gc = GreatArc(a, b, points=points_requested)
-    coordinates = gc.coordinates()
-    inner_angles = gc.inner_angles()
-    distances = gc.distances()
+    coordinates = gc.coordinates
+    inner_angles = gc.inner_angles
+    distances = gc.distances
 
     # Ensure a GreatArc object is returned
     assert isinstance(gc, GreatArc)
@@ -75,20 +75,20 @@ def test_great_arc_coordinates(points_requested, points_expected, first_point,
     # Test the properties of the GreatArc object
     assert gc.start == a
     assert gc.end == b
-    assert gc.distance_unit == u.km
-    assert gc.observer == a.observer
+    assert gc._distance_unit == u.km
+    assert gc._observer == a.observer
     assert gc.center.x == 0 * u.km
     assert gc.center.y == 0 * u.km
     assert gc.center.z == 0 * u.km
 
-    np.testing.assert_almost_equal(gc.start_cartesian, np.asarray([428721.09135385, -428722.90519236, 341776.09102756]))
-    np.testing.assert_almost_equal(gc.end_cartesian, np.asarray([-71429.52293813, 571439.07124801, 390859.57978693]))
-    np.testing.assert_almost_equal(gc.center_cartesian, np.asarray([0, 0, 0]))
+    np.testing.assert_almost_equal(gc._start_cartesian, np.asarray([428721.09135385, -428722.90519236, 341776.09102756]))
+    np.testing.assert_almost_equal(gc._end_cartesian, np.asarray([-71429.52293813, 571439.07124801, 390859.57978693]))
+    np.testing.assert_almost_equal(gc._center_cartesian, np.asarray([0, 0, 0]))
 
-    np.testing.assert_almost_equal(gc.v1, np.asarray([428721.09135385, -428722.90519236, 341776.09102756]))
+    np.testing.assert_almost_equal(gc._v1, np.asarray([428721.09135385, -428722.90519236, 341776.09102756]))
     np.testing.assert_almost_equal(gc._r, 696000.00000451738)
-    np.testing.assert_almost_equal(gc.v2, np.asarray([-71429.52293813, 571439.07124801, 390859.57978693]))
-    np.testing.assert_almost_equal(gc.v3, np.asarray([56761.62657985, 466230.70058902, 513637.08158833]))
+    np.testing.assert_almost_equal(gc._v2, np.asarray([-71429.52293813, 571439.07124801, 390859.57978693]))
+    np.testing.assert_almost_equal(gc._v3, np.asarray([56761.62657985, 466230.70058902, 513637.08158833]))
 
     # Inner angle
     assert gc.inner_angle.unit == u.rad
@@ -136,33 +136,6 @@ def test_great_arc_wrongly_formatted_points(points):
     with pytest.raises(ValueError):
         dummy = GreatArc(a, b, points=points)
 
-    with pytest.raises(ValueError):
-        dummy = GreatArc(a, b).coordinates(points=points)
-
-    with pytest.raises(ValueError):
-        dummy = GreatArc(a, b).inner_angles(points=points)
-
-    with pytest.raises(ValueError):
-        dummy = GreatArc(a, b).distances(points=points)
-
-    with pytest.raises(ValueError):
-        dummy = GreatArc(a, b).distances(points=points)
-
-
-# Test that the great arc code properly differentiates between the default
-# points and the requested points
-def test_great_arc_points_differentiates():
-    m = sunpy.map.Map(sunpy.map.Map(sunpy.data.test.get_test_filepath('aia_171_level1.fits')))
-    coordinate_frame = m.coordinate_frame
-    a = SkyCoord(600*u.arcsec, -600*u.arcsec, frame=coordinate_frame)
-    b = SkyCoord(-100*u.arcsec, 800*u.arcsec, frame=coordinate_frame)
-    gc = GreatArc(a, b)
-    coordinates = gc.coordinates(10)
-    inner_angles = gc.inner_angles(11)
-    distances = gc.distances(12)
-    assert len(coordinates) == 10 and len(gc.coordinates()) == 100
-    assert len(inner_angles) == 11 and len(gc.inner_angles()) == 100
-    assert len(distances) == 12 and len(gc.distances()) == 100
 
 
 # Test the great circle code against calculable quantities
