@@ -217,6 +217,8 @@ class GreatArc(object):
         self.back_arc_indices = np.arange(self.from_front_to_back_index + 1,
                                           self.from_back_to_front_index)
 
+        # Calculate the exact location where the great circle intersects
+        # moves over the edge of the disk
 
 class GreatCircle(GreatArc):
     """
