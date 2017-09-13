@@ -14,6 +14,40 @@ from sunpy.coordinates import frames
 __all__ = ['GreatArc', 'GreatCircle']
 
 
+#
+# Calculates the inner angle along a great arc between two specified points on
+# the solar sphere.
+#
+def inner_angle(start, end, center=None):
+
+        # Units of the start point
+        distance_unit = start.transform_to(frames.Heliocentric).cartesian.xyz.unit
+
+        # Set the center of the sphere
+        if center is None:
+            c = SkyCoord(0 * distance_unit, 0 * distance_unit, 0 * distance_unit, frame=frames.Heliocentric)
+
+        # Convert the start, end and center points to their Cartesian values
+        start_cartesian = start.transform_to(frames.Heliocentric).cartesian.xyz.to(distance_unit).value
+        end_cartesian = end.transform_to(frames.Heliocentric).cartesian.xyz.to(distance_unit).value
+        center_cartesian = c.transform_to(frames.Heliocentric).cartesian.xyz.to(distance_unit).value
+
+        return _inner_angle(start_cartesian, end_cartesian, center_cartesian) * u.rad
+
+
+def _inner_angle(start_cartesian, end_cartesian, center_cartesian):
+
+        # Great arc properties calculation
+        # Vector from center to first point
+        v1 = start_cartesian - center_cartesian
+
+        # Vector from center to second point
+        v2 = end_cartesian - center_cartesian
+
+        # Inner angle between v1 and v2 in radians
+        return np.arctan2(np.linalg.norm(np.cross(v1, v2)), np.dot(v1, v2))
+
+
 class GreatArc(object):
     """
     Calculate the properties of a great arc at user-specified points between a
@@ -153,19 +187,18 @@ class GreatArc(object):
         # Vector from center to first point
         self._v1 = self._start_cartesian - self._center_cartesian
 
-        # Distance of the first point from the center
-        self._r = np.linalg.norm(self._v1)
-
         # Vector from center to second point
         self._v2 = self._end_cartesian - self._center_cartesian
+
+        # Distance of the first point from the center
+        self._r = np.linalg.norm(self._v1)
 
         # The v3 vector lies in plane of v1 & v2 and is orthogonal to v1
         self._v3 = np.cross(np.cross(self._v1, self._v2), self._v1)
         self._v3 = self._r * self._v3 / np.linalg.norm(self._v3)
 
         # Inner angle between v1 and v2 in radians
-        self.inner_angle = np.arctan2(np.linalg.norm(np.cross(self._v1, self._v2)),
-                                      np.dot(self._v1, self._v2)) * u.rad
+        self.inner_angle = inner_angle(self.start, self.end, center=self.center)
 
         # Radius of the sphere
         self.radius = self._r * self._distance_unit
@@ -202,23 +235,50 @@ class GreatArc(object):
         # disk (True) or on the back (False).
         self.front_or_back = self.cartesian_coordinates.z.value > 0
 
+        # Boolean properties that describe if the arc is all on the front side
+        # or all on the backside.
+        if np.all(self.front_or_back):
+            self.all_on_front = True
+        else:
+            self.all_on_front = False
+
+        if np.all(~self.front_or_back):
+            self.all_on_back = True
+        else:
+            self.all_on_back = False
+
         # Calculate the indices where the co-ordinates change from being on the
         # front of the disk to the back to the disk.
-        self._fob = self.front_or_back.astype(np.int)
-        self._change = self._fob[1:] - self._fob[0:-1]
-        self.from_front_to_back_index = np.where(self._change == -1)[0][0]
-        self.from_back_to_front_index = np.where(self._change == 1)[0][0]
+        if self.all_on_front:
+            self.from_front_to_back_points_index = None
+            self.from_back_to_front_points_index = None
+            self.front_arc_indices = np.arange(0, self._npoints)
+            self.back_arc_indices = None
+        if self.all_on_back:
+            self.from_front_to_back_points_index = None
+            self.from_back_to_front_points_index = None
+            self.front_arc_indices = None
+            self.back_arc_indices = np.arange(0, self._npoints)
 
-        # Indices of arc on the front side
-        self.front_arc_indices = np.concatenate((np.arange(self.from_back_to_front_index, self._npoints),
-                                                 np.arange(0, self.from_front_to_back_index)))
+        if not self.all_on_back and not self.all_on_front:
+            self._fob = self.front_or_back.astype(np.int)
+            self._change = self._fob[1:] - self._fob[0:-1]
+            self.from_front_to_back_points_index = np.where(self._change == -1)[0][0]
+            self.from_back_to_front_points_index = np.where(self._change == 1)[0][0]
 
-        # Indices of arc on the back side
-        self.back_arc_indices = np.arange(self.from_front_to_back_index + 1,
-                                          self.from_back_to_front_index)
+            # Indices of arc on the front side
+            self.front_arc_indices = np.concatenate((np.arange(self.from_back_to_front_points_index, self._npoints),
+                                                     np.arange(0, self.from_front_to_back_points_index)))
 
-        # Calculate the exact location where the great circle intersects
-        # moves over the edge of the disk
+            # Indices of arc on the back side
+            self.back_arc_indices = np.arange(self.from_front_to_back_points_index + 1,
+                                              self.from_back_to_front_points_index)
+
+        # Calculate the exact location where a great circle that runs from the
+        # start coordinate to the end coordinate crosses the disk.
+        self.from_front_to_back_coordinate = None
+        self.from_back_to_front_coordinate = None
+
 
 class GreatCircle(GreatArc):
     """
