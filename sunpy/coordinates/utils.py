@@ -252,3 +252,30 @@ class GreatArc(object):
                         great_arc_points_cartesian[:, 1],
                         great_arc_points_cartesian[:, 2],
                         frame=frames.Heliocentric, observer=self.observer).transform_to(self.start_frame)
+
+
+def parse_solar_object_locator(sol):
+    if isinstance(sol, SolarObjectLocator):
+
+class SolarObjectLocator(object):
+    """
+    Implements the Solar Object Locator as defined here:
+    https://www.iau.org/static/science/scientific_bodies/divisions/e/div_e_target_id.pdf
+
+    """
+    def __init__(self, time, coordinate=None, carrington_longitude=None, carrington_latitude=None, radial_distance=None)
+        self.time = parse_time(time)
+        self.coordinate = coordinate
+        self._sol = 'SOL'
+
+        if coordinate is None:
+            self.value = '{:s}'.format(self._sol, self.time)
+            self.type = 'minimal'
+        else:
+            if isinstance(coordinate, SkyCoord):
+
+
+        self.standard = TODO
+
+        self.allowed = TODO
+
