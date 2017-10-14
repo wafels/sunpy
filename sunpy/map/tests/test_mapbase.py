@@ -30,6 +30,7 @@ from sunpy.extern import six
 
 testpath = sunpy.data.test.rootdir
 
+
 @pytest.fixture
 def aia171_test_map():
     return sunpy.map.Map(os.path.join(testpath, 'aia_171_level1.fits'))
@@ -158,7 +159,7 @@ def test_detector(generic_map):
 
 
 def test_dsun(generic_map):
-    assert generic_map.dsun == sunpy.sun.sunearth_distance(generic_map.date).to(u.m)
+    assert generic_map.dsun == sunpy.coordinates.get_sunearth_distance(generic_map.date).to(u.m)
 
 
 def test_rsun_meters(generic_map):
@@ -170,17 +171,15 @@ def test_rsun_obs(generic_map):
 
 
 def test_coordinate_system(generic_map):
-    assert generic_map.coordinate_system == ('HPLN-TAN', 'HPLT-TAN')
+    assert generic_map.coordinate_system == ('HPLN-   ', 'HPLT-   ')
 
 
 def test_carrington_longitude(generic_map):
-    assert generic_map.carrington_longitude == (
-        sunpy.sun.heliographic_solar_center(generic_map.date))[0]
+    assert generic_map.carrington_longitude == sunpy.coordinates.get_sun_L0(generic_map.date)
 
 
 def test_heliographic_latitude(generic_map):
-    assert generic_map.heliographic_latitude == (
-        sunpy.sun.heliographic_solar_center(generic_map.date))[1]
+    assert generic_map.heliographic_latitude == sunpy.coordinates.get_sun_B0(generic_map.date)
 
 
 def test_heliographic_longitude(generic_map):
@@ -197,12 +196,12 @@ def test_coordinate_frame(aia171_test_map):
     assert frame.observer.lat == aia171_test_map.observer_coordinate.frame.lat
     assert frame.observer.lon == aia171_test_map.observer_coordinate.frame.lon
     assert frame.observer.radius == aia171_test_map.observer_coordinate.frame.radius
-    assert frame.dateobs == aia171_test_map.date
+    assert frame.obstime == aia171_test_map.date
 
 
-#==============================================================================
+# ==============================================================================
 # Test Rotation WCS conversion
-#==============================================================================
+# ==============================================================================
 def test_rotation_matrix_pci_j(generic_map):
     np.testing.assert_allclose(generic_map.rotation_matrix, np.matrix([[0., -1.], [1., 0.]]))
 
@@ -260,10 +259,10 @@ def test_swap_cd():
 
 def test_data_range(generic_map):
     """Make sure xrange and yrange work"""
-    assert (generic_map.xrange[1] - generic_map.xrange[0]
-            ).to(u.arcsec).value == generic_map.meta['cdelt1'] * generic_map.meta['naxis1']
-    assert (generic_map.yrange[1] - generic_map.yrange[0]
-            ).to(u.arcsec).value == generic_map.meta['cdelt2'] * generic_map.meta['naxis2']
+    assert_quantity_allclose((generic_map.xrange[1] - generic_map.xrange[0]
+            ).to(u.arcsec).value, generic_map.meta['cdelt1'] * generic_map.meta['naxis1'])
+    assert_quantity_allclose((generic_map.yrange[1] - generic_map.yrange[0]
+            ).to(u.arcsec).value, generic_map.meta['cdelt2'] * generic_map.meta['naxis2'])
 
     # the weird unit-de-unit thing here is to work around and inconsistency in
     # the way np.average works with astropy 1.3 and 2.0dev
@@ -273,11 +272,11 @@ def test_data_range(generic_map):
                              generic_map.center.Ty)
 
 
-def test_data_to_pixel(generic_map):
+def test_world_to_pixel(generic_map):
     """Make sure conversion from data units to pixels is internally
     consistent"""
     # Note: FITS pixels start from 1,1
-    test_pixel = generic_map.data_to_pixel(generic_map.reference_coordinate, origin=1)
+    test_pixel = generic_map.world_to_pixel(generic_map.reference_coordinate, origin=1)
     assert_quantity_allclose(test_pixel, generic_map.reference_pixel)
 
 
@@ -593,7 +592,7 @@ def test_hg_coord(heliographic_test_map):
 
 
 def test_hg_pix_to_data(heliographic_test_map):
-    out = heliographic_test_map.pixel_to_data(180 * u.pix, 90 * u.pix)
+    out = heliographic_test_map.pixel_to_world(180 * u.pix, 90 * u.pix)
     assert isinstance(out, SkyCoord)
     assert isinstance(out.frame, sunpy.coordinates.HeliographicCarrington)
     assert_quantity_allclose(out.lon, 0 * u.deg)
@@ -601,7 +600,7 @@ def test_hg_pix_to_data(heliographic_test_map):
 
 
 def test_hg_data_to_pix(heliographic_test_map):
-    out = heliographic_test_map.data_to_pixel(
+    out = heliographic_test_map.world_to_pixel(
         SkyCoord(
             0 * u.deg, 0 * u.deg, frame=heliographic_test_map.coordinate_frame))
     assert_quantity_allclose(out[0], 180 * u.pix)
@@ -643,8 +642,8 @@ def test_hc_warn():
 
 
 def test_more_than_two_dimensions():
-    """Checks to see if an appropriate error is raised when a FITs with more than two dimensions is loaded.
-    We need to load a >2-dim dataset with a TELESCOP header"""
+    """Checks to see if an appropriate error is raised when a FITS with more than two dimensions is
+    loaded.  We need to load a >2-dim dataset with a TELESCOP header"""
 
     # Data crudely represnts 4 stokes, 4 wavelengths with Y,X of 3 and 5.
     bad_data = np.random.rand(4, 4, 3, 5)

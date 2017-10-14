@@ -1,48 +1,61 @@
-The SunPy project is happy to announce the release of SunPy 0.7.0.
+The SunPy project is happy to announce the release of SunPy 0.8.0.
 
-SunPy 0.7 is the next major release of SunPy and contains 665 commits from 27
-people, 11 of which have never contributed before. The major features of this
-release are:
+SunPy 0.8 is the next major release of SunPy and contains 1442 commits in over
+200 pull requests, closing 163 issues from 35 people, 17 of whom have never
+contributed before.
 
-* Python 3.4 and 3.5 support. This is the first version of SunPy to support
-  Python 3, we recommend that users start to consider moving to Python 3, please
-  report any issues you may have.
-* New coordinate framework. The new `sunpy.coordinates` module provides a
-  high-level interface to converting between different physical coordinate
-  systems such as Helioprojective and Heliographic.
-* New `draw_rectangle` and `draw_contours` helpers for `Map`.
-* New functions `flareclass_to_flux` and `flux_to_flareclass` which convert
-  between GOES flux to GOES class numbers (e.g. X12, M3.4).
-* Support for masks in SunPy `Map` and `MapCube`.
+This release is a large milestone for the SunPy library. It contains large new
+features that have been in development for a number of years, and will form the
+foundation of SunPy for the future. The main additions are `sunpy.net.Fido` and
+`sunpy.timeseries`, as well as major upgrades to `sunpy.coordinates`. Along with
+this it deprecates some old parts of SunPy that have been rewritten, two
+submodules `sunpy.lightcurve` and `sunpy.wcs` have been superseded by
+`sunpy.timeseries` and `sunpy.coordinates` respectively.
 
-The people who have contributed to this release are:
+The people who have contributed to the code for this release are:
 
     Stuart Mumford
-    Pritish Chakraborty
-    Steven Christe
     Jack Ireland
-    Brigitta Sipocz
-    David Perez-Suarez
-    Punyaslok Pattnaik *
-    Michael S Kirk *
-    Andrew Leonard
-    Alex Hamilton
-    Andrew Inglis
-    Daniel Ryan
-    Sally Dacie *
-    Sanskar Modi *
-    Albert Y. Shih
-    Erik M. Bray
-    Larry Manley
-    Priyank Lodha *
     Nabil Freij
-    Ankit *
-    Igor Babuschkin *
-    Ole Streicher *
-    Simon Liedtke
-    Sudarshan Konge *
-    Tessa D. Wilkinson *
-    Thomas Robitaille
-    yasintoda *
-     
+    Punyaslok Pattnaik
+    Alex Hamilton
+    Ankit Kumar *
+    David Pérez-Suárez
+    Steven Christe
+    Rishabh Sharma
+    Albert Y. Shih
+    Sudarshan Konge
+    Daniel Ryan
+    Ankit Baruah *
+    Brigitta Sipocz
+    Prateek Chanda *
+    Andrew Leonard
+    Sanskar Modi
+    Nitin Choudhary *
+    Agneet Chatterjee *
+    Michael Charlton *
+    Rajul Srivastava
+    Dhruv Goel *
+    Garrison Taylor *
+    Serge Zahniy *
+    Andrew Inglis
+    Ankit
+    Joe Letts *
+    Shane Maloney *
+    Adrian Price-Whelan *
+    Dan D'Avella *
+    Duygu Keşkek *
+    Fionnlagh Mackenzie Dover *
+    Kalpesh Krishna *
+    Kaustubh Hiware *
+    Larry Manley
+
 Where an * indicates their first contribution.
+
+
+In addition to the code contributions I would like to highlight the work of
+Nabil Freij who has done a lot of work in the last few months releasing bug
+fixes for the 0.7 series as well as a lot of behind the scenes work on SunPy's
+tooling. I would also like to thank Duygu Keşkek who has redesigned the
+sunpy.org page and the documentation as part of her GSOC project. Finally, I
+would like to welcome Monica Bobra and Sabrina Savage to the SunPy Board.
