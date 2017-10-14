@@ -32,6 +32,8 @@ def inner_angle(start, end, center=None):
         # Set the center of the sphere
         if center is None:
             c = SkyCoord(0 * distance_unit, 0 * distance_unit, 0 * distance_unit, frame=frames.Heliocentric)
+        else:
+            c = center
 
         # Convert the start, end and center points to their Cartesian values
         v1 = _skycoord_to_cartesian_vector_equivalent(start, c, distance_unit)
@@ -290,16 +292,18 @@ class GreatArc(object):
 
         # Calculate the exact location where a great circle that runs from the
         # start coordinate to the end coordinate crosses the disk.
-        angle1 = np.arctan2(-self._v1[2], self._v3[2]) * u.rad
-        angle2 = np.mod(angle1 + np.pi, 2 * np.pi)
+        _angle1 = np.arctan2(-self._v1[2], self._v3[2])
+        _angle2 = np.mod(_angle1 + np.pi, 2 * np.pi)
+        _angle_min = np.min([_angle1, _angle2])*u.rad
+        _angle_max = np.max([_angle1, _angle2])*u.rad
         if self.front_or_back[0]:
             # First point is on the front
-            self.from_front_to_back_coordinate = self._calculate_great_arc_cartesian_skycoord(self._v1, self._v3, np.min([angle1, angle2]))
-            self.from_back_to_front_coordinate = self._calculate_great_arc_cartesian_skycoord(self._v1, self._v3, np.max([angle1, angle2]))
+            self.from_front_to_back_coordinate = (self._calculate_great_arc_cartesian_skycoord(self._v1[np.newaxis, :], self._v3[np.newaxis, :], _angle_min)).transform_to(self._start_frame)[0]
+            self.from_back_to_front_coordinate = (self._calculate_great_arc_cartesian_skycoord(self._v1[np.newaxis, :], self._v3[np.newaxis, :], _angle_max)).transform_to(self._start_frame)[0]
         else:
             # First point is on the back
-            self.from_front_to_back_coordinate = self._calculate_great_arc_cartesian_skycoord(self._v1, self._v3, np.max([angle1, angle2]))
-            self.from_back_to_front_coordinate = self._calculate_great_arc_cartesian_skycoord(self._v1, self._v3, np.min([angle1, angle2]))
+            self.from_front_to_back_coordinate = (self._calculate_great_arc_cartesian_skycoord(self._v1[np.newaxis, :], self._v3[np.newaxis, :], _angle_max)).transform_to(self._start_frame)[0]
+            self.from_back_to_front_coordinate = (self._calculate_great_arc_cartesian_skycoord(self._v1[np.newaxis, :], self._v3[np.newaxis, :], _angle_min)).transform_to(self._start_frame)[0]
 
     # Co-ordinates along the great arc in the Cartesian co-ordinate frame.
     def _calculate_great_arc_cartesian_skycoord(self, v1, v3, angles):
