@@ -76,9 +76,9 @@ class EITMap(GenericMap):
         cr = CartesianRepresentation(self.meta['hec_x'] * u.km, self.meta['hec_y'] * u.km, self.meta['hec_z'] * u.km)
         hte = HeliocentricTrueEcliptic(cr, obstime=self.date)
         hgs_coord = hte.transform_to(HeliographicStonyhurst(obstime=self.date))
-        self.meta['hglt_obs'] = hgs_coord.lat
-        self.meta['hgln_obs'] = hgs_coord.lon
-        self.meta['dsun_obs'] = hgs_coord.radius
+        self.meta['hglt_obs'] = hgs_coord.lat.value
+        self.meta['hgln_obs'] = hgs_coord.lon.value
+        self.meta['dsun_obs'] = hgs_coord.radius.value
 
         # Plot settings
         self.plot_settings['cmap'] = cm.get_cmap(self._get_cmap_name())
