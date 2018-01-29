@@ -60,6 +60,7 @@ class EITMap(GenericMap):
     * `SOHO Mission Page <http://sohowww.nascom.nasa.gov>`_
     * `SOHO EIT Instrument Page <http://umbra.nascom.nasa.gov/eit/>`_
     * `SOHO EIT User Guide <http://umbra.nascom.nasa.gov/eit/eit_guide/>`_
+    * `SOHO orbit co-ordinates <https://soho.nascom.nasa.gov/data/ancillary/index.html#orbitcoordinates>`_
     """
 
     def __init__(self, data, header, **kwargs):
@@ -78,7 +79,7 @@ class EITMap(GenericMap):
         hgs_coord = hte.transform_to(HeliographicStonyhurst(obstime=self.date))
         self.meta['hglt_obs'] = hgs_coord.lat.value
         self.meta['hgln_obs'] = hgs_coord.lon.value
-        self.meta['dsun_obs'] = hgs_coord.radius.value
+        self.meta['dsun_obs'] = hgs_coord.radius.to(u.m).value
 
         # Plot settings
         self.plot_settings['cmap'] = cm.get_cmap(self._get_cmap_name())
