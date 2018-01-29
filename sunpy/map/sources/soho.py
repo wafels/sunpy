@@ -11,13 +11,15 @@ from matplotlib import colors
 from astropy.units import Quantity
 from astropy.visualization import PowerStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
+import astropy.units as u
+from astropy.coordinates import CartesianRepresentation, HeliocentricTrueEcliptic
 
 from sunpy.map import GenericMap
 from sunpy.sun import constants
 from sunpy.sun import sun
 from sunpy.cm import cm
 from sunpy.map.sources.source_type import source_stretch
-from sunpy.coordinates import get_sunearth_distance
+from sunpy.coordinates import get_sunearth_distance, HeliographicStonyhurst
 
 __all__ = ['EITMap', 'LASCOMap', 'MDIMap']
 
@@ -67,8 +69,18 @@ class EITMap(GenericMap):
         # Fill in some missing info
         self.meta['detector'] = "EIT"
         self.meta['waveunit'] = "Angstrom"
-        self._fix_dsun()
         self._nickname = self.detector
+
+        # Take the Heliocentric Ecliptic co-ordinate system information
+        # in the FITS header and use it to calculate the position of EIT.
+        cr = CartesianRepresentation(self.meta['hec_x'] * u.km, self.meta['hec_y'] * u.km, self.meta['hec_z'] * u.km)
+        hte = HeliocentricTrueEcliptic(cr, obstime=self.date)
+        hgs_coord = hte.transform_to(HeliographicStonyhurst(obstime=self.date))
+        self.meta['hglt_obs'] = hgs_coord.lat
+        self.meta['hgln_obs'] = hgs_coord.lon
+        self.meta['dsun_obs'] = hgs_coord.radius
+
+        # Plot settings
         self.plot_settings['cmap'] = cm.get_cmap(self._get_cmap_name())
         self.plot_settings['norm'] = ImageNormalize(stretch=source_stretch(self.meta, PowerStretch(0.5)))
 
@@ -78,9 +90,6 @@ class EITMap(GenericMap):
         Returns the solar radius as measured by EIT in arcseconds.
         """
         return Quantity(self.meta['solar_r'] * self.meta['cdelt1'], 'arcsec')
-
-    def _fix_dsun(self):
-        self.meta['dsun_obs'] = _dsunAtSoho(self.date, self.rsun_obs)
 
     @classmethod
     def is_datasource_for(cls, data, header, **kwargs):
