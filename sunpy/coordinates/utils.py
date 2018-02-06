@@ -14,17 +14,27 @@ from sunpy.coordinates import frames
 __all__ = ['inner_angle', 'GreatArc', 'GreatCircle']
 
 
-#
-# Calculates the inner angle along a great arc between two specified points on
-# the solar sphere.
-#
 def inner_angle(start, end, center=None):
         """
+        Calculates the inner angle along a great arc between two specified points
+        on a sphere.
 
-        :param start:
-        :param end:
-        :param center:
-        :return:
+        Parameters
+        ----------
+        start : `~astropy.coordinates.SkyCoord`
+            Start point.
+
+        end : `~astropy.coordinates.SkyCoord`
+            End point.
+
+        center : `~astropy.coordinates.SkyCoord`
+            Center of the sphere.
+
+        Returns
+        -------
+        inner_angle : `astropy.units.rad`
+            The inner angle between the start and end point in radians.
+
         """
         # Units of the start point
         distance_unit = start.transform_to(frames.Heliocentric).cartesian.xyz.unit
@@ -42,35 +52,69 @@ def inner_angle(start, end, center=None):
         return _inner_angle(v1, v2) * u.rad
 
 
-# Inner angle between vector v1 and v2 in radians
 def _inner_angle(v1, v2):
     """
+    Inner angle between vector v1 and v2 in radians.
 
-    :param v1:
-    :param v2:
-    :return:
+    Parameters
+    ----------
+    v1 : `~numpy.ndarray`
+        Vector
+
+    v2 : `~numpy.ndarray`
+        Vector
+
+    Returns
+    -------
+    inner_angle : `astropy.units.rad`
+        Inner angle between the input vectors.
     """
     return np.arctan2(np.linalg.norm(np.cross(v1, v2)), np.dot(v1, v2))
 
 
-# Calculate the Cartesian equivalent of an input SkyCoord
 def _skycoord_to_cartesian(skycoord, distance_unit):
     """
+    Calculate the Cartesian equivalent of an input SkyCoord.
 
-    :param skycoord:
-    :param distance_unit:
-    :return:
+    Parameters
+    ----------
+    skycoord : `~astropy.coordinates.SkyCoord`
+        Position in space.
+
+    distance_unit : `~astropy.units.Quantity`
+        The spatial position in a Cartesian co-ordinate system is calculated
+        with respect to these units.
+
+    Returns
+    -------
+    v : `~numpy.ndarray`
+        A numpy array equivalent to the Cartesian value of the input
+        SkyCoord.
     """
     return skycoord.transform_to(frames.Heliocentric).cartesian.xyz.to(distance_unit).value
 
 
 def _skycoord_to_cartesian_vector_equivalent(skycoord, center, distance_unit):
     """
+    Calculate the vector equivalent of an input SkyCoord.
 
-    :param skycoord:
-    :param center:
-    :param distance_unit:
-    :return:
+    Parameters
+    ----------
+    skycoord : `~astropy.coordinates.SkyCoord`
+        Position in space.
+
+    center : `~astropy.coordinates.SkyCoord`
+        The location of the center against which the center is calculated.
+
+    distance_unit : `~astropy.units.Quantity`
+        The spatial position in a Cartesian co-ordinate system is calculated
+        with respect to these units.
+
+    Returns
+    -------
+    v : `~numpy.ndarray`
+        A numpy array representing the vector going from the center to the
+        position in space.
     """
     return _skycoord_to_cartesian(skycoord, distance_unit) - _skycoord_to_cartesian(center, distance_unit)
 
@@ -88,8 +132,10 @@ class GreatArc(object):
     end : `~astropy.coordinates.SkyCoord`
         End point.
 
-    center : `~astropy.coordinates.SkyCoord`
-        Center of the sphere.
+    center : None | `~astropy.coordinates.SkyCoord`
+        Center of the sphere.  If None, then the center is defined
+        as (0, 0, 0) in the appropriate units and Cartesian co-ordinate
+        system.
 
     points : `int`, `~numpy.ndarray`
         Number of points along the great arc.  If points is not explicitly set,
@@ -100,24 +146,24 @@ class GreatArc(object):
         parameterized locations along the great arc from 0, denoting the start
         of the arc, to 1, denoting the end of the arc.
 
-    Properties
-    ----------
+    Notes
+    -----
     The GreatArc object has a number of useful properties.
 
-    inner_angle : `astropy.units.rad`
+    inner_angle : `~astropy.units.rad`
         The inner angle between the start and end point in radians.
 
-    distance :
+    distance : `~astropy.units.Quantity`
         Distance on the sphere between the start point and the end point.
 
-    radius :
+    radius : `~astropy.units.Quantity`
         Radius of the sphere.
 
     inner_angles : `astropy.units.rad`
         The inner angles for the parameterized points along the arc from the
         start co-ordinate to the end measured in radius.
 
-    distances :
+    distances : `~astropy.units.Quantity`
         Distance on the sphere of the parameterized points along the arc from
         the start co-ordinate to the end measured in radius.
 
@@ -330,8 +376,10 @@ class GreatCircle(GreatArc):
     end : `~astropy.coordinates.SkyCoord`
         End point.
 
-    center : `~astropy.coordinates.SkyCoord`
-        Center of the sphere.
+    center : None | `~astropy.coordinates.SkyCoord`
+        Center of the sphere.  If None, then the center is defined
+        as (0, 0, 0) in the appropriate units and Cartesian co-ordinate
+        system.
 
     points : `int`, `~numpy.ndarray`
         Number of points along the great circle.   If points is not
@@ -343,8 +391,8 @@ class GreatCircle(GreatArc):
         0, denoting the start of the circle, to 1, denoting the end of the
         circle.
 
-    Properties
-    ----------
+    Notes
+    -----
     The GreatCircle object has the same properties as the GreatArc object.
     Please refer to the documentation for the GreatArc object.
 
