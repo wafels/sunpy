@@ -251,7 +251,7 @@ class GreatArc(object):
                                    0 * self._distance_unit,
                                    0 * self._distance_unit, frame=frames.Heliocentric)
 
-        # Convert the start, end and center points to their Cartesian values
+        # Convert the start, end and center points to their Cartesian vector values
         self._center_cartesian = _skycoord_to_cartesian(self.center, self._distance_unit)
         self._v1 = _skycoord_to_cartesian_vector_equivalent(self.start, self.center, self._distance_unit)
         self._v2 = _skycoord_to_cartesian_vector_equivalent(self.end, self.center, self._distance_unit)
