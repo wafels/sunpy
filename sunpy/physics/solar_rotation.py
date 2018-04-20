@@ -7,8 +7,9 @@ import numpy as np
 
 import astropy.units as u
 
-from sunpy.physics.differential_rotation import solar_rotate_coordinate
+from sunpy.physics.differential_rotation import solar_rotate_coordinate, diffrot_map
 from sunpy.image.coalignment import apply_shifts
+import sunpy.map
 
 __author__ = 'J. Ireland'
 
@@ -144,3 +145,61 @@ def mapcube_solar_derotate(mc, layer_index=0, clip=True, shift=None, **kwargs):
 
     # Apply the pixel shifts and return the mapcube
     return apply_shifts(mc, yshift_keep, xshift_keep, clip=clip)
+
+
+def mapcube_solar_differential_derotate(mc, layer_index=0, clip=True, **diffrot_kwargs):
+    """
+    Move the layers in a mapcube according to solar differential
+    rotation.
+
+
+    Parameters
+    ----------
+    mc : `sunpy.map.MapCube`
+        A mapcube of shape (ny, nx, nt), where nt is the number of layers in
+        the mapcube.
+    layer_index : int
+        Solar derotation shifts of all maps in the mapcube are assumed
+        to be relative to the layer in the mapcube indexed by layer_index.
+    ``**diffrot_kwargs``
+        These keywords are passed to the function
+        `sunpy.physics.solar_rotation.calculate_solar_rotate_shift`.
+
+    Returns
+    -------
+    output : `sunpy.map.MapCube`
+        The results of the solar differential rotation applied to the
+        each layer in the input mapcube.
+
+    Examples
+    --------
+
+    >>> import sunpy.data.sample  # doctest: +REMOTE_DATA
+    >>> from sunpy.physics.solar_rotation import mapcube_solar_differential_derotate
+    >>> map1 = sunpy.map.Map(sunpy.data.sample.AIA_171_IMAGE)  # doctest: +REMOTE_DATA
+    >>> map2 = sunpy.map.Map(sunpy.data.sample.EIT_195_IMAGE)  # doctest: +REMOTE_DATA
+    >>> mc = sunpy.map.Map([map1, map2], cube=True)  # doctest: +REMOTE_DATA
+    >>> derotated_mc = mapcube_solar_differential_derotate(mc)  # doctest: +REMOTE_DATA
+    >>> derotated_mc = mapcube_solar_differential_derotate(mc, layer_index=-1)  # doctest: +REMOTE_DATA
+    """
+
+    # Calculate solar differentially rotated maps
+    new_mc = []
+    for m in mc:
+        new_mc.append(diffrot_map(m, time=mc[layer_index].date, **diffrot_kwargs))
+
+    # Differentially rotated map
+    return sunpy.map.Map(new_mc, cube=True)
+
+
+def mapcube_clip_to_maximum_extent(mc):
+    """Find the largest physical extent that sits inside all the layers.  This will
+    return a proper datacube."""
+    for m in mc:
+        bl = m.bottom_left_coord
+        tr = m.top_right_coord
+        # Find the maximum
+
+        # Now crop, using submap, but use pixel units, not arcseconds, to be
+        # absolutely sure a true cube is returned
+
