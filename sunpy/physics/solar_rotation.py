@@ -147,11 +147,10 @@ def mapcube_solar_derotate(mc, layer_index=0, clip=True, shift=None, **kwargs):
     return apply_shifts(mc, yshift_keep, xshift_keep, clip=clip)
 
 
-def mapcube_solar_differential_derotate(mc, layer_index=0, clip=True, **diffrot_kwargs):
+def mapcube_solar_differential_derotate(mc, layer_index=0, **diffrot_kwargs):
     """
     Move the layers in a mapcube according to solar differential
     rotation.
-
 
     Parameters
     ----------
@@ -159,8 +158,9 @@ def mapcube_solar_differential_derotate(mc, layer_index=0, clip=True, **diffrot_
         A mapcube of shape (ny, nx, nt), where nt is the number of layers in
         the mapcube.
     layer_index : int
-        Solar derotation shifts of all maps in the mapcube are assumed
-        to be relative to the layer in the mapcube indexed by layer_index.
+        Solar differentially derotate all maps in the mapcube by
+        amounts relative to the time of layer in the mapcube indexed by
+        layer_index.
     ``**diffrot_kwargs``
         These keywords are passed to the function
         `sunpy.physics.solar_rotation.calculate_solar_rotate_shift`.
@@ -186,20 +186,8 @@ def mapcube_solar_differential_derotate(mc, layer_index=0, clip=True, **diffrot_
     # Calculate solar differentially rotated maps
     new_mc = []
     for m in mc:
-        new_mc.append(diffrot_map(m, time=mc[layer_index].date, **diffrot_kwargs))
+        dmap = diffrot_map(m, time=mc[layer_index].date, **diffrot_kwargs)
+        new_mc.append(dmap)
 
     # Differentially rotated map
     return sunpy.map.Map(new_mc, cube=True)
-
-
-def mapcube_clip_to_maximum_extent(mc):
-    """Find the largest physical extent that sits inside all the layers.  This will
-    return a proper datacube."""
-    for m in mc:
-        bl = m.bottom_left_coord
-        tr = m.top_right_coord
-        # Find the maximum
-
-        # Now crop, using submap, but use pixel units, not arcseconds, to be
-        # absolutely sure a true cube is returned
-
