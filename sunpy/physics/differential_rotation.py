@@ -310,15 +310,16 @@ def diffrot_map(smap, time=None, dt=None, pad=False, **diffrot_kwargs):
     # Recover the original intensity range.
     out = un_norm(out, smap.data)
 
-    # Update the meta information with the new date and time, and reference pixel.
+    # Update the meta information with the reference pixel.
     out_meta = deepcopy(smap.meta)
     if out_meta.get('date_obs', False):
         del out_meta['date_obs']
-    out_meta['date-obs'] = "{:%Y-%m-%dT%H:%M:%S}".format(new_time)
 
     if submap:
-        crval_rotated = solar_rotate_coordinate(smap.reference_coordinate, new_time, **diffrot_kwargs)
-        out_meta['crval1'] = crval_rotated.Tx.value
-        out_meta['crval2'] = crval_rotated.Ty.value
+        # What is the new center of the FOV?
+        center_rotated = solar_rotate_coordinate(smap.center, new_time, **diffrot_kwargs)
+        # Change the CRVAL values to take account of how the center of the FOV has changed
+        out_meta['crval1'] = smap.reference_coordinate.Tx.value + (smap.center.Tx.value - center_rotated.Tx.value)
+        out_meta['crval2'] = smap.reference_coordinate.Ty.value + (smap.center.Ty.value - center_rotated.Ty.value)
 
     return sunpy.map.Map((out, out_meta))
