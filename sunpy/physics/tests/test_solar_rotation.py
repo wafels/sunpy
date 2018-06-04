@@ -14,7 +14,7 @@ from astropy.tests.helper import assert_quantity_allclose
 
 import sunpy.data.test
 import sunpy.map
-from sunpy.physics.solar_rotation import calculate_solar_rotate_shift, mapcube_solar_derotate
+from sunpy.physics.solar_rotation import calculate_solar_rotate_shift, mapcube_solar_derotate, mapcube_solar_differential_derotate
 
 
 @pytest.fixture
@@ -87,6 +87,37 @@ def test_mapcube_solar_derotate(aia171_test_mapcube, aia171_test_submap):
     # Test that the returned reference pixels are correctly displaced.
     layer_index = 0
     derotated = mapcube_solar_derotate(aia171_test_mapcube, clip=True, layer_index=layer_index)
+    tshift = calculate_solar_rotate_shift(aia171_test_mapcube, layer_index=layer_index)
+    derotated_reference_pixel_at_layer_index = derotated[layer_index].reference_pixel
+    for i, m_derotated in enumerate(derotated):
+        for i_s, s in enumerate(['x', 'y']):
+            diff_in_rotated_reference_pixel = derotated[i].reference_pixel[i_s] - derotated_reference_pixel_at_layer_index[i_s]
+            diff_arcsec = tshift[s][i] - tshift[s][layer_index]
+            diff_pixel = diff_arcsec / m.scale[0]
+            assert_quantity_allclose(diff_in_rotated_reference_pixel, diff_pixel, rtol=5e-2)
+
+
+def test_mapcube_solar_differential_derotate(aia171_test_mapcube, aia171_test_submap):
+    # Test that a mapcube is returned when the clipping is False.
+    tmc = mapcube_solar_differential_derotate(aia171_test_mapcube, clip=False)
+    assert(isinstance(tmc, sunpy.map.MapCube))
+
+    # Test that all entries have the same shape when clipping is False
+    for m in tmc:
+        assert(m.data.shape == aia171_test_submap.data.shape)
+
+    # Test that a mapcube is returned on default clipping (clipping is True)
+    tmc = mapcube_solar_differential_derotate(aia171_test_mapcube)
+    assert(isinstance(tmc, sunpy.map.MapCube))
+
+    # Test that the shape of data is correct when clipped
+    clipped_shape = (24, 19)
+    for m in tmc:
+        assert(m.data.shape == clipped_shape)
+
+    # Test that the returned reference pixels are correctly displaced.
+    layer_index = 0
+    derotated = mapcube_solar_differential_derotate(aia171_test_mapcube, clip=True, layer_index=layer_index)
     tshift = calculate_solar_rotate_shift(aia171_test_mapcube, layer_index=layer_index)
     derotated_reference_pixel_at_layer_index = derotated[layer_index].reference_pixel
     for i, m_derotated in enumerate(derotated):

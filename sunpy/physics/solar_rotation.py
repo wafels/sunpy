@@ -116,7 +116,8 @@ def mapcube_solar_derotate(mc, layer_index=0, clip=True, shift=None, **kwargs):
 
     >>> import sunpy.data.sample  # doctest: +REMOTE_DATA
     >>> from sunpy.physics.solar_rotation import mapcube_solar_derotate
-    >>> map1 = sunpy.map.Map(sunpy.data.sample.AIA_171_IMAGE)  # doctest: +REMOTE_DATA
+    >>> map1 = sunpy.map.Map(sunpy.data.sample.AIA_171_
+    IMAGE)  # doctest: +REMOTE_DATA
     >>> map2 = sunpy.map.Map(sunpy.data.sample.EIT_195_IMAGE)  # doctest: +REMOTE_DATA
     >>> mc = sunpy.map.Map([map1, map2], cube=True)  # doctest: +REMOTE_DATA
     >>> derotated_mc = mapcube_solar_derotate(mc)  # doctest: +REMOTE_DATA
