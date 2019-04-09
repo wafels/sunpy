@@ -80,8 +80,9 @@ class HelioviewerClient(object):
             "date": self._format_date(date)
         }
         params.update(kwargs)
-
+        print(params)
         response = self._get_json(params)
+        print(response)
 
         # Cast date string to DateTime
         response['date'] = parse_time(response['date'])
@@ -235,6 +236,7 @@ class HelioviewerClient(object):
         """Returns a JSON result as a string"""
         reader = codecs.getreader("utf-8")
         response = self._request(params)
+        print(response)
         return json.load(reader(response))
 
     def _get_file(self, params, directory=None, overwrite=False):
@@ -271,6 +273,7 @@ class HelioviewerClient(object):
         -------
         out : result of request
         """
+        print(urllib.parse.urlencode(params).encode('utf-8'))
         response = urllib.request.urlopen(
             self._api, urllib.parse.urlencode(params).encode('utf-8'))
 
