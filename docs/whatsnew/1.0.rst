@@ -303,7 +303,6 @@ For example, since the Earth moves, observers on the Earth must take in to accou
   >>> import sunpy.map
   >>> from sunpy.data.sample import AIA_171_IMAGE
   >>> from sunpy.physics.differential_rotation import differential_rotate
-
   >>> aia = sunpy.map.Map(AIA_171_IMAGE)
   >>> differential_rotate(aia, time=-23*u.hour)
 
@@ -314,7 +313,6 @@ For example, since the Earth moves, observers on the Earth must take in to accou
   >>> import astropy.units as u
   >>> import sunpy.map
   >>> from sunpy.data.sample import AIA_171_IMAGE
-
   >>> from sunpy.physics.differential_rotation import differential_rotate
   >>> aia = sunpy.map.Map(AIA_171_IMAGE)
   >>> new_observer = SkyCoord(lon=-15*u.deg, lat=-4*u.deg, radius=1*u.au, obstime=aia.date-34*u.hour, frame=HeliographicStonyhurst)
@@ -334,7 +332,6 @@ For example, getting the world coordinates for every pixel::
     >>> import astropy.units as u
     >>> from sunpy.physics.differential_rotation import differential_rotate
     >>> from sunpy.map import contains_full_disk, all_coordinates_from_map
-
     >>> aia = sunpy.map.Map(AIA_171_IMAGE)
     >>> contains_full_disk(aia)
     True
@@ -349,7 +346,6 @@ or generating a new FITS header for a custom map::
     >>> import astropy.units as u
     >>> from sunpy.coordinates import frames
     >>> from astropy.coordinates import SkyCoord
-
     >>> data = np.arange(0,100).reshape(10,10)
     >>> coord = SkyCoord(0*u.arcsec, 0*u.arcsec, obstime = '2013-10-28', observer = 'earth', frame = frames.Helioprojective)
     >>> header = sunpy.map.header_helper.make_fitswcs_header(data, coord)
