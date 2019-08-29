@@ -90,31 +90,35 @@ def map_edges_coordinates(smap):
 
     Returns
     -------
-    top, bottom, left_hand_side, right_hand_side : `~astropy.units.Quantity`
+    top, bottom, left_hand_side, right_hand_side : `~astropy.coordinates.SkyCoord`
         Returns the coordinates at the edge of the map;
         the zeroth, first, second and third tuple values
         return the top, bottom, left hand side and right
-        hand side pixel locations respectively of the input map.
+        hand side coordinates respectively of the input map.
     """
-    # Calculate all the edges
+    # Top right and bottom left coordinates define the extent of the map
     tr = smap.top_right_coord
     bl = smap.bottom_left_coord
+
+    # Get the 'x' extent of the map
     tr_x = tr.Tx.value
     bl_x = bl.Tx.value
     nx = int(smap.dimensions.x.value)
     x = np.linspace(bl_x, tr_x, nx) * u.arcsec
 
+    # Get the 'y' extent of the map
     tr_y = tr.Ty.value
     bl_y = bl.Ty.value
     ny = int(smap.dimensions.y.value)
     y = np.linspace(bl_y, tr_y, ny) * u.arcsec
 
+    # Calculate all the edges as sky coordinates in the frame of the
+    # input map.
     top = SkyCoord(x, y[-1], frame=smap.coordinate_frame)
     bottom = SkyCoord(x, y[0], frame=smap.coordinate_frame)
-
     left_hand_side = SkyCoord(x[0], y, frame=smap.coordinate_frame)
     right_hand_side = SkyCoord(x[-1], y, frame=smap.coordinate_frame)
-    print('ccc')
+
     return top, bottom, left_hand_side, right_hand_side
 
 
