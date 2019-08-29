@@ -9,7 +9,7 @@ from astropy.time import TimeDelta
 
 from sunpy.coordinates import HeliographicStonyhurst, Helioprojective, Heliocentric
 from sunpy.map import (all_coordinates_from_map, contains_full_disk, coordinate_is_on_solar_disk,
-                       is_all_off_disk, is_all_on_disk, map_edges, on_disk_bounding_coordinates)
+                       is_all_off_disk, is_all_on_disk, map_edges_coordinates, on_disk_bounding_coordinates)
 from sunpy.map.header_helper import get_observer_meta
 from sunpy.time import parse_time
 from sunpy.util import expand_list
@@ -262,7 +262,7 @@ def solar_rotate_coordinate(coordinate, observer=None, time=None, **diff_rot_kwa
     return heliographic_rotated.transform_to(coordinate.frame.name)
 
 
-def _rotate_submap_edge(smap, pixels, observer, **diff_rot_kwargs):
+def _rotate_submap_edge(smap, edge_coordinates, observer, **diff_rot_kwargs):
     """
     Helper function that is used to calculate where the edge of a rectangular
     map move to on rotation.
@@ -288,14 +288,12 @@ def _rotate_submap_edge(smap, pixels, observer, **diff_rot_kwargs):
     coordinates : `~astropy.coordinates.SkyCoord`
         The coordinates of a rotated edge.
     """
-    # Coordinates
-    c = smap.pixel_to_world(pixels[:, 0], pixels[:, 1])
 
     # Only apply solar rotation if all coordinates are on the disk.
-    if np.all(~coordinate_is_on_solar_disk(c)):
-        coordinates = deepcopy(c)
+    if np.all(~coordinate_is_on_solar_disk(edge_coordinates)):
+        coordinates = deepcopy(edge_coordinates)
     else:
-        coordinates = solar_rotate_coordinate(c, observer=observer, **diff_rot_kwargs)
+        coordinates = solar_rotate_coordinate(edge_coordinates, observer=observer, **diff_rot_kwargs)
     return coordinates
 
 
@@ -523,7 +521,7 @@ def differential_rotate(smap, observer=None, time=None, **diff_rot_kwargs):
         top_right = smap.top_right_coord
 
         # Get the edges of the minimal submap that contains all the on-disk pixels.
-        edges = map_edges(smap)
+        edges = map_edges_coordinates(smap)
 
         # Calculate where the output array moves to.
         # Rotate the top and bottom edges

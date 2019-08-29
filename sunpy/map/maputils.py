@@ -11,7 +11,7 @@ from astropy.coordinates import SkyCoord
 from sunpy.coordinates import Helioprojective
 
 __all__ = ['all_pixel_indices_from_map', 'all_coordinates_from_map',
-           'map_edges', 'solar_angular_radius', 'contains_full_disk',
+           'map_edges', 'map_edges_coordinates', 'solar_angular_radius', 'contains_full_disk',
            'is_all_off_disk', 'is_all_on_disk', 'contains_limb',
            'coordinate_is_on_solar_disk', 'on_disk_bounding_coordinates']
 
@@ -76,6 +76,45 @@ def map_edges(smap):
     bottom = list(product(np.arange(nx), [0])) * u.pix
     left_hand_side = list(product([0], np.arange(ny))) * u.pix
     right_hand_side = list(product([nx - 1], np.arange(ny))) * u.pix
+    return top, bottom, left_hand_side, right_hand_side
+
+
+def map_edges_coordinates(smap):
+    """
+    Returns the coordinates of the edges of an input map.
+
+    Parameters
+    ----------
+    smap : `~sunpy.map.GenericMap`
+        A SunPy map.
+
+    Returns
+    -------
+    top, bottom, left_hand_side, right_hand_side : `~astropy.units.Quantity`
+        Returns the coordinates at the edge of the map;
+        the zeroth, first, second and third tuple values
+        return the top, bottom, left hand side and right
+        hand side pixel locations respectively of the input map.
+    """
+    # Calculate all the edges
+    tr = smap.top_right_coord
+    bl = smap.bottom_left_coord
+    tr_x = tr.Tx.value
+    bl_x = bl.Tx.value
+    nx = int(smap.dimensions.x.value)
+    x = np.linspace(bl_x, tr_x, nx) * u.arcsec
+
+    tr_y = tr.Ty.value
+    bl_y = bl.Ty.value
+    ny = int(smap.dimensions.y.value)
+    y = np.linspace(bl_y, tr_y, ny) * u.arcsec
+
+    top = SkyCoord(x, y[-1], frame=smap.coordinate_frame)
+    bottom = SkyCoord(x, y[0], frame=smap.coordinate_frame)
+
+    left_hand_side = SkyCoord(x[0], y, frame=smap.coordinate_frame)
+    right_hand_side = SkyCoord(x[-1], y, frame=smap.coordinate_frame)
+    print('ccc')
     return top, bottom, left_hand_side, right_hand_side
 
 
