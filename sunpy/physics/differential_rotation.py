@@ -245,6 +245,10 @@ def solar_rotate_coordinate(coordinate, observer=None, time=None, **diff_rot_kwa
     # latitude). Points off the limb are returned as nan.
     heliographic_coordinate = coordinate.transform_to(HeliographicStonyhurst)
 
+    # Transform the coordinates to the position in the heliographic Stonyhurst coordinate system at the
+    # new observation time.
+    heliographic_coordinate = heliographic_coordinate.transform_to(HeliographicStonyhurst(obstime=new_observer.obstime))
+
     # Compute the differential rotation
     drot = diff_rot(interval, heliographic_coordinate.lat.to(u.degree), **diff_rot_kwargs)
 
