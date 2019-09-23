@@ -241,18 +241,14 @@ def solar_rotate_coordinate(coordinate, observer=None, time=None, **diff_rot_kwa
     # Calculate the interval between the start and end time
     interval = (new_observer.obstime - coordinate.obstime).to(u.s)
 
-    # Compute Stonyhurst Heliographic co-ordinates - returns (longitude,
-    # latitude). Points off the limb are returned as nan.
-    heliographic_coordinate = coordinate.transform_to(HeliographicStonyhurst)
-
     # Transform the coordinates to the position in the heliographic Stonyhurst coordinate system at the
-    # new observation time.
-    heliographic_coordinate = heliographic_coordinate.transform_to(HeliographicStonyhurst(obstime=new_observer.obstime))
+    # new observer.
+    heliographic_coordinate = coordinate.transform_to(new_observer).transform_to(HeliographicStonyhurst)
 
-    # Compute the differential rotation
+    # Amount of differential rotation
     drot = diff_rot(interval, heliographic_coordinate.lat.to(u.degree), **diff_rot_kwargs)
 
-    # Rotate the input co-ordinate as seen by the original observer
+    # Rotate the input co-ordinate
     heliographic_rotated = SkyCoord(heliographic_coordinate.lon + drot,
                                     heliographic_coordinate.lat,
                                     heliographic_coordinate.radius,
@@ -260,9 +256,7 @@ def solar_rotate_coordinate(coordinate, observer=None, time=None, **diff_rot_kwa
                                     observer=new_observer,
                                     frame=HeliographicStonyhurst)
 
-    # Calculate where the rotated co-ordinate appears as seen by new observer,
-    # and then transform it into the co-ordinate system of the input
-    # co-ordinate.
+    # Return the coordinate so that it is in the same form as the input
     return heliographic_rotated.transform_to(coordinate.frame.name)
 
 
