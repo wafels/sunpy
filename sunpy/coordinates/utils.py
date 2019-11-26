@@ -83,7 +83,7 @@ class GreatArc:
 
     """
 
-    def __init__(self, start, end, center=None, points=None):
+    def __init__(self, start, end, center=None, points=None, great_circle=False):
 
         # Observer
         self.observer = start.observer
@@ -126,6 +126,9 @@ class GreatArc:
         else:
             self.center = center.transform_to(self.start_frame).transform_to(Heliocentric)
 
+        # Did the user ask for a great circle?
+        self._great_circle = great_circle
+
         # Convert the start, end and center points to their Cartesian values
         self.start_cartesian = self.start.cartesian.xyz.to(self.distance_unit).value
         self.end_cartesian = self.end.cartesian.xyz.to(self.distance_unit).value
@@ -145,15 +148,18 @@ class GreatArc:
         self.v3 = np.cross(np.cross(self.v1, self.v2), self.v1)
         self.v3 = self._r * self.v3 / np.linalg.norm(self.v3)
 
-        # Inner angle between v1 and v2 in radians
-        self.inner_angle = np.arctan2(np.linalg.norm(np.cross(self.v1, self.v2)),
-                                      np.dot(self.v1, self.v2)) * u.rad
-
         # Radius of the sphere
         self.radius = self._r * self.distance_unit
 
         # Distance on the sphere between the start point and the end point.
-        self.distance = self.radius * self.inner_angle.value
+        self.distance = self.radius * self._inner_angle.value
+
+        # Inner angle between v1 and v2 in radians
+        if self._great_circle:
+            self._inner_angle = 2 * np.pi * u.rad
+        else:
+            self._inner_angle = np.arctan2(np.linalg.norm(np.cross(self.v1, self.v2)),
+                                           np.dot(self.v1, self.v2)) * u.rad
 
     def _points_handler(self, points):
         """
@@ -197,7 +203,7 @@ class GreatArc:
 
         """
         these_points = self._points_handler(points)
-        return these_points.reshape(len(these_points), 1)*self.inner_angle
+        return these_points.reshape(len(these_points), 1)*self._inner_angle
 
     def distances(self, points=None):
         """
@@ -223,7 +229,7 @@ class GreatArc:
             transforming the co-ordinate system of the start co-ordinate into
             its Cartesian equivalent.
         """
-        return self.radius * self.inner_angles(points=points).value
+        return self.radius * self._inner_angle(points=points).value
 
     def coordinates(self, points=None):
         """
@@ -250,7 +256,7 @@ class GreatArc:
 
         """
         # Calculate the inner angles
-        these_inner_angles = self.inner_angles(points=points)
+        these_inner_angles = self._inner_angle(points=points)
 
         # Calculate the Cartesian locations from the first to second points
         great_arc_points_cartesian = (self.v1[np.newaxis, :] * np.cos(these_inner_angles) +
