@@ -127,7 +127,10 @@ class GreatArc:
             self._center = center.transform_to(self._output_observer).transform_to(Heliocentric)
 
         # Did the user ask for a great circle?
-        self._great_circle = great_circle
+        self.great_circle = great_circle
+
+        # Which direction between the initial and target points?
+        self.positive_angle = positive_angle
 
         # Convert the start, end and center points to their Cartesian values
         self._initial_cartesian = self._initial.cartesian.xyz.to(self._distance_unit).value
@@ -152,16 +155,16 @@ class GreatArc:
         self._radius = self._r * self._distance_unit
 
         # Calculate the angle subtended by the requested arc
-        if self._great_circle:
+        if self.great_circle:
             full_circle = 2 * np.pi * u.rad
-            if positive_angle:
+            if self.positive_angle:
                 self._angle = full_circle
             else:
                 self._angle = -full_circle
         else:
             # Inner angle between v1 and v2 in radians
             inner_angle = np.arctan2(np.linalg.norm(np.cross(self._v1, self._v2)), np.dot(self._v1, self._v2)) * u.rad
-            if positive_angle:
+            if self.positive_angle:
                 self._angle = inner_angle
             else:
                 self._angle = inner_angle - 2 * np.pi * u.rad
