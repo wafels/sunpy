@@ -7,10 +7,11 @@ import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord
 
-from sunpy.coordinates import Heliocentric
+from sunpy.coordinates import Heliocentric, Helioprojective
 
 
-__all__ = ['GreatArc']
+__all__ = ['GreatArc', 'is_in_front_of_plane_of_sun', 'solar_angular_radius',
+           'coordinate_is_on_solar_disk']
 
 
 class GreatArc:
@@ -265,3 +266,80 @@ class GreatArc:
                         obstime=self.obstime,
                         observer=self.observer,
                         frame=Heliocentric).transform_to(self.start_frame)
+
+
+@u.quantity_input
+def is_in_front_of_plane_of_sun(coordinates):
+    """
+    Checks if the coordinates are in front of the plane of the Sun.
+
+    The check is performed by converting the input SkyCoord to the heliocentric coordinate
+    system.  In this system, the z-axis is defined to be parallel to the observer-Sun line,
+    pointing toward the observer.  The value z=0 defines a plane that goes through the
+    center of the Sun.  True is returned if the z value of the heliocentric representation
+    of the coordinate is greater than zero.
+
+    Parameters
+    ----------
+    coordinates : `~astropy.coordinates.SkyCoord`
+        The input coordinate.
+
+    Returns
+    -------
+    `~bool`
+        Returns `True` if the coordinate is in front of the plane of the Sun, `False` otherwise.
+    """
+
+    return coordinates.transform(Heliocentric).z.value > 0
+
+
+@u.quantity_input
+def solar_angular_radius(coordinates):
+    """
+    Calculates the solar angular radius as seen by the observer.
+
+    The tangent of the angular size of the Sun is equal to the radius
+    of the Sun divided by the distance between the observer and the
+    center of the Sun.
+
+    Parameters
+    ----------
+    coordinates : `~astropy.coordinates.SkyCoord`, `~sunpy.coordinates.frames.Helioprojective`
+        The input coordinate. The coordinate frame must be
+        `~sunpy.coordinates.Helioprojective`.
+
+    Returns
+    -------
+    angle : `~astropy.units.Quantity`
+        The solar angular radius.
+    """
+    return np.arctan(coordinates.rsun / coordinates.observer.radius)
+
+
+@u.quantity_input
+def coordinate_is_within_solar_radius(coordinates):
+    """
+    Checks if the helioprojective Cartesian coordinates are on the solar disk.
+
+    The check is performed by comparing the coordinate's angular distance
+    to the angular size of the solar radius.  The solar disk is assumed to be
+    a circle i.e., solar oblateness and other effects that cause the solar disk to
+    be non-circular are not taken in to account.
+
+    Parameters
+    ----------
+    coordinates : `~astropy.coordinates.SkyCoord`, `~sunpy.coordinates.frames.Helioprojective`
+        The input coordinate. The coordinate frame must be
+        `~sunpy.coordinates.Helioprojective`.
+
+    Returns
+    -------
+    `~bool`
+        Returns `True` if the coordinate is on disk, `False` otherwise.
+    """
+
+    if not isinstance(coordinates.frame, Helioprojective):
+        raise ValueError('The input coordinate(s) must be in the Helioprojective Cartesian frame.')
+    # Calculate the angle of every pixel from the center of the Sun and compare it the angular
+    # radius of the Sun.
+    return (coordinates.Tx ** 2 + coordinates.Ty ** 2) < solar_angular_radius(coordinates)

@@ -8,7 +8,7 @@ import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord
 
-from sunpy.coordinates import Helioprojective
+from sunpy.coordinates import Helioprojective, Heliocentric
 
 __all__ = ['all_pixel_indices_from_map', 'all_coordinates_from_map',
            'map_edges', 'solar_angular_radius', 'contains_full_disk',
@@ -79,29 +79,6 @@ def map_edges(smap):
     return top, bottom, left_hand_side, right_hand_side
 
 
-@u.quantity_input
-def solar_angular_radius(coordinates):
-    """
-    Calculates the solar angular radius as seen by the observer.
-
-    The tangent of the angular size of the Sun is equal to the radius
-    of the Sun divided by the distance between the observer and the
-    center of the Sun.
-
-    Parameters
-    ----------
-    coordinates : `~astropy.coordinates.SkyCoord`, `~sunpy.coordinates.frames.Helioprojective`
-        The input coordinate. The coordinate frame must be
-        `~sunpy.coordinates.Helioprojective`.
-
-    Returns
-    -------
-    angle : `~astropy.units.Quantity`
-        The solar angular radius.
-    """
-    return np.arctan(coordinates.rsun / coordinates.observer.radius)
-
-
 def contains_full_disk(smap):
     """
     Checks if a map contains the full disk of the Sun.
@@ -146,35 +123,6 @@ def contains_full_disk(smap):
     # Test if all the edge pixels are more than one solar radius distant
     # and that the whole map is not all off disk.
     return np.all(coordinate_angles > solar_angular_radius(edge_of_world)) and ~is_all_off_disk(smap)
-
-
-@u.quantity_input
-def coordinate_is_on_solar_disk(coordinates):
-    """
-    Checks if the helioprojective Cartesian coordinates are on the solar disk.
-
-    The check is performed by comparing the coordinate's angular distance
-    to the angular size of the solar radius.  The solar disk is assumed to be
-    a circle i.e., solar oblateness and other effects that cause the solar disk to
-    be non-circular are not taken in to account.
-
-    Parameters
-    ----------
-    coordinates : `~astropy.coordinates.SkyCoord`, `~sunpy.coordinates.frames.Helioprojective`
-        The input coordinate. The coordinate frame must be
-        `~sunpy.coordinates.Helioprojective`.
-
-    Returns
-    -------
-    `~bool`
-        Returns `True` if the coordinate is on disk, `False` otherwise.
-    """
-
-    if not isinstance(coordinates.frame, Helioprojective):
-        raise ValueError('The input coordinate(s) must be in the Helioprojective Cartesian frame.')
-    # Calculate the angle of every pixel from the center of the Sun and compare it the angular
-    # radius of the Sun.
-    return np.sqrt(coordinates.Tx ** 2 + coordinates.Ty ** 2) < solar_angular_radius(coordinates)
 
 
 def is_all_off_disk(smap):
