@@ -43,6 +43,16 @@ class GreatArc:
         a GreatArc object sets the locations of the default points along the
         great arc.
 
+    great_circle : `bool`
+        If True, calculate a great circle that passes through the start and the end.
+
+    use_inner_angle : `bool`
+        If True and great_circle is False, then the outer angle from start to end is used
+        to calculate the great arc.
+        If True and great_circle is True, the great circle goes from the start to the end
+        in the direction of the outer angle.
+
+
     Methods
     -------
     angles : `~astropy.units.rad`
@@ -83,7 +93,7 @@ class GreatArc:
 
     """
 
-    def __init__(self, start, end, center=None, points=None, great_circle=False, positive_angle=True):
+    def __init__(self, start, end, center=None, points=None, great_circle=False, use_inner_angle=True):
 
         # Observer
         self._output_observer = start.observer
@@ -130,7 +140,7 @@ class GreatArc:
         self.great_circle = great_circle
 
         # Which direction between the initial and target points?
-        self.positive_angle = positive_angle
+        self.use_inner_angle = use_inner_angle
 
         # Convert the start, end and center points to their Cartesian values
         self._initial_cartesian = self._initial.cartesian.xyz.to(self._distance_unit).value
@@ -157,14 +167,14 @@ class GreatArc:
         # Calculate the angle subtended by the requested arc
         if self.great_circle:
             full_circle = 2 * np.pi * u.rad
-            if self.positive_angle:
+            if self.use_inner_angle:
                 self._angle = full_circle
             else:
                 self._angle = -full_circle
         else:
             # Inner angle between v1 and v2 in radians
             inner_angle = np.arctan2(np.linalg.norm(np.cross(self._v1, self._v2)), np.dot(self._v1, self._v2)) * u.rad
-            if self.positive_angle:
+            if self.use_inner_angle:
                 self._angle = inner_angle
             else:
                 self._angle = inner_angle - 2 * np.pi * u.rad
