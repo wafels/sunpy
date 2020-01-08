@@ -15,26 +15,23 @@ __all__ = ['GreatArc']
 
 class GreatArc:
     """
-    Calculate the properties of a great arc at user-specified points between a
-    start and end point on a sphere.
-
-    The coordinates of the great arc are returned with the observation time
-    and coordinate frame of the starting point of the arc.
+    Calculate the properties of points on a great arc defined by two user-specified coordinates on a sphere.
 
     Parameters
     ----------
-    start : `~astropy.coordinates.SkyCoord`
-        Start point.
+    initial : `~astropy.coordinates.SkyCoord`
+        The first coordinate.
 
-    end : `~astropy.coordinates.SkyCoord`
-        End point.
+    target : `~astropy.coordinates.SkyCoord`
+        The second coordinate.
+
 
     center : `~astropy.coordinates.SkyCoord`
         Center of the sphere.
 
     points : `None`, `int`, `numpy.ndarray`
-        Number of points along the great arc.  If None, the arc is calculated
-        at 100 equally spaced points from start to end.  If int, the arc is
+        Number of points along the great arc.  If `None`, the arc is calculated
+        at 100 equally spaced points from the initial to target.  If `int`, the arc is
         calculated at "points" equally spaced points from start to end.  If a
         numpy.ndarray is passed, it must be one dimensional and have values
         >=0 and <=1.  The values in this array correspond to parameterized
@@ -44,30 +41,24 @@ class GreatArc:
         great arc.
 
     great_circle : `bool`
-        If True, calculate a great circle that passes through the start and the end.
+        If True, calculate a great circle that passes through the initial and target coordinates.
 
-    use_inner_angle : `bool`
-        If True and great_circle is False, then the outer angle from start to end is used
-        to calculate the great arc.
-        If True and great_circle is True, the great circle goes from the start to the end
-        in the direction of the outer angle.
-
+    use_inner_angle_direction : `bool`
+        Defines the direction of the great arc on the sphere. If True, then the great arc is directed
+        along the inner angle from the initial to the target coordinate. If False, then the great arc
+        is directed along the outer angle from the initial to the target coordinate.
 
     Methods
     -------
     angles : `~astropy.units.rad`
-        Radian angles of the points along the great arc from the start to end
-        co-ordinate.
+        Angles subtended by the points of the great arc.
 
     distances : `~astropy.units`
-        Distances of the points along the great arc from the start to end
-        co-ordinate.  The units are defined as those returned after transforming
-        the co-ordinate system of the start co-ordinate into its Cartesian
-        equivalent.
+        Distances on the sphere of the points of the great arc.
 
     coordinates : `~astropy.coordinates.SkyCoord`
-        Co-ordinates along the great arc in the co-ordinate frame of the
-        start point.
+        Coordinates of the points of the great arc, returned in the coordinate frame of the initial
+        coordinate.
 
     References
     ----------
@@ -93,22 +84,22 @@ class GreatArc:
 
     """
 
-    def __init__(self, start, end, center=None, points=None, great_circle=False, use_inner_angle=True):
+    def __init__(self, initial, target, center=None, points=None, great_circle=False, use_inner_angle_direction=True):
 
         # Observer
-        self._output_observer = start.observer
+        self._output_observer = initial.observer
 
         # Co-ordinate frame of the starting point
-        self._output_frame = start.frame
+        self._output_frame = initial.frame
 
         # Observation time
-        self._output_obstime = start.obstime
+        self._output_obstime = initial.obstime
 
         # Start point of the great arc
-        self._initial = start.transform_to(Heliocentric)
+        self._initial = initial.transform_to(Heliocentric)
 
         # End point of the great arc
-        self._target = end.transform_to(self._output_frame).transform_to(Heliocentric)
+        self._target = target.transform_to(self._output_frame).transform_to(Heliocentric)
 
         # Parameterized location of points between the start and the end of the
         # great arc.
@@ -140,7 +131,7 @@ class GreatArc:
         self.great_circle = great_circle
 
         # Which direction between the initial and target points?
-        self.use_inner_angle = use_inner_angle
+        self.use_inner_angle_direction = use_inner_angle_direction
 
         # Convert the start, end and center points to their Cartesian values
         self._initial_cartesian = self._initial.cartesian.xyz.to(self._distance_unit).value
@@ -167,14 +158,14 @@ class GreatArc:
         # Calculate the angle subtended by the requested arc
         if self.great_circle:
             full_circle = 2 * np.pi * u.rad
-            if self.use_inner_angle:
+            if self.use_inner_angle_direction:
                 self._angle = full_circle
             else:
                 self._angle = -full_circle
         else:
             # Inner angle between v1 and v2 in radians
             inner_angle = np.arctan2(np.linalg.norm(np.cross(self._v1, self._v2)), np.dot(self._v1, self._v2)) * u.rad
-            if self.use_inner_angle:
+            if self.use_inner_angle_direction:
                 self._angle = inner_angle
             else:
                 self._angle = inner_angle - 2 * np.pi * u.rad
@@ -198,6 +189,11 @@ class GreatArc:
             return points
         else:
             raise ValueError('Incorrectly specified "points" keyword value.')
+
+    @property
+    def initial(self):
+        return self.initial
+
 
     def angles(self, points=None):
         """
