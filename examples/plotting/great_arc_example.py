@@ -52,7 +52,7 @@ intensity_along_arc = m.data[y, x]
 ###############################################################################
 # Define the angular location of each pixel along the arc from the start point
 # to the end.
-angles = great_arc.inner_angles().to(u.deg)
+angles = great_arc.angles().to(u.deg)
 
 ###############################################################################
 # Plot the intensity along the arc from the start to the end point.
