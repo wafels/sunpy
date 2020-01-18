@@ -34,7 +34,7 @@ def test_great_arc_calculable(initial, target):
     c = SkyCoord(initial[0]*u.degree, initial[1]*u.degree, frame=frames.HeliographicStonyhurst,
                  observer=frames.HeliographicStonyhurst(0*u.deg, 0*u.deg, 1*u.AU))
     d = SkyCoord(target[0]*u.degree, target[1]*u.degree, frame=frames.HeliographicStonyhurst,
-                 observer=frames.HeliographicStonyhurst(0*u.deg, 0*u.deg, 1*u.AU))
+                 observer=frames.HeliographicStonyhurst(0*u.deg, 0*u.deg, 1*u.AU)).transform_to(frames.Helioprojective)
     gc = GreatArc(c, d)
 
     c_trans = c.transform_to(frames.Heliocentric)
@@ -46,9 +46,9 @@ def test_great_arc_calculable(initial, target):
     assert gc._initial.observer.radius == 1 * u.AU
 
     d_trans = d.transform_to(frames.Heliocentric(observer=c.observer))
-    assert gc._target.x == d_trans.x
-    assert gc._target.y == d_trans.y
-    assert gc._target.z == d_trans.z
+    np.testing.assert_almost_equal(gc._target.x.value, d_trans.x.value)
+    np.testing.assert_almost_equal(gc._target.y.value, d_trans.y.value)
+    np.testing.assert_almost_equal(gc._target.z.value, d_trans.z.value)
     assert gc._target.observer.lat == 0*u.deg
     assert gc._target.observer.lon == 0*u.deg
     assert gc._target.observer.radius == 1 * u.AU
@@ -66,13 +66,16 @@ def test_great_arc_calculable(initial, target):
     assert gc.initial.observer.lat == 0*u.deg
     assert gc.initial.observer.lon == 0*u.deg
     assert gc.initial.observer.radius == 1 * u.AU
+    assert isinstance(gc.initial.frame, frames.HeliographicStonyhurst)
 
-    assert gc.target.lat == d.lat
-    assert gc.target.lon == d.lon
-    assert gc.target.radius == d.radius
+    assert gc.target.Tx == d.Tx
+    assert gc.target.Ty == d.Ty
+    assert gc.target.distance == d.distance
     assert gc.target.observer.lat == 0*u.deg
     assert gc.target.observer.lon == 0*u.deg
     assert gc.target.observer.radius == 1 * u.AU
+    assert isinstance(gc.target.frame, frames.Helioprojective)
+
 
 # Test the calculation of coordinates using varying numbers of points on
 # initialization of the GreatArc object.
