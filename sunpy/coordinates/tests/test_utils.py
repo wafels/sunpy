@@ -58,6 +58,21 @@ def test_great_arc_calculable(initial, target):
     np.testing.assert_almost_equal(gc._distance.to(
         'km').value, sun.constants.radius.to('km').value * 2 * np.pi/8, decimal=1)
 
+    # Test that the initial and target coordinates stored by the great arc object
+    # are the same as those passed in to the function
+    assert gc.initial.lat == c.lat
+    assert gc.initial.lon == c.lon
+    assert gc.initial.radius == c.radius
+    assert gc.initial.observer.lat == 0*u.deg
+    assert gc.initial.observer.lon == 0*u.deg
+    assert gc.initial.observer.radius == 1 * u.AU
+
+    assert gc.target.lat == d.lat
+    assert gc.target.lon == d.lon
+    assert gc.target.radius == d.radius
+    assert gc.target.observer.lat == 0*u.deg
+    assert gc.target.observer.lon == 0*u.deg
+    assert gc.target.observer.radius == 1 * u.AU
 
 # Test the calculation of coordinates using varying numbers of points on
 # initialization of the GreatArc object.
