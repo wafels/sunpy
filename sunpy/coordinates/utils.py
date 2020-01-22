@@ -180,77 +180,42 @@ class GreatArc:
         # Distance on the sphere between the initial point and the target point.
         self._distance = self._radius * self._angle.value
 
-    def _points_handler(self, points):
-        """
-        Interprets the points keyword.
-        """
-        if points is None:
-            return self._default_points
-        elif isinstance(points, int):
-            return np.linspace(0, 1, points)
-        elif isinstance(points, np.ndarray):
-            if points.ndim > 1:
+        # Interpret the points keyword
+        self.points = points
+        if self.points is None:
+            self._points = self._default_points
+        elif isinstance(self.points, int):
+            self._points = np.linspace(0, 1, self.points)
+        elif isinstance(self.points, np.ndarray):
+            if self.points.ndim > 1:
                 raise ValueError('One dimensional numpy ndarrays only.')
-            if np.any(points < 0) or np.any(points > 1):
+            if np.any(self.points < 0) or np.any(self.points > 1):
                 raise ValueError('All value in points array must be strictly >=0 and <=1.')
-            return points
+            self._points = self.points
         else:
             raise ValueError('Incorrectly specified "points" keyword value.')
 
-    def angles(self, points=None):
-        """
-        Calculates the angles for the parameterized points along the arc
-        and returns the value in radians.
 
-        Parameters
-        ----------
-        points : `None`, `int`, `numpy.ndarray`
-            Number of points along the great arc.  If `None`, coordinates are
-            calculated at 100 equally spaced points along the arc.  If `int`,
-            coordinates are calculated at "points" equally spaced points along
-            the arc.  If a numpy.ndarray is passed, it must be one dimensional
-            and have values >=0 and <=1.  The values in this array correspond to
-            parameterized locations along the arc, with zero corresponding to
-            the initial coordinate and 1 corresponding to the last point of the
-            arc.
+        # Calculate the visibility of the arc coordinates - coordinates in
+        # front of the plane of the Sun are classed as visible
+        self._visibility = self.coordinates.transform_to(Heliocentric).z.value > 0
+        self._front = self._visibility.astype(np.int)
+        self._change = self._front[1:] - self._front[0:-1]
 
-        Returns
-        -------
-        angles : `~astropy.units.rad`
-            Radian angles of the points along the great arc.
+    @property
+    def angles(self):
+        return self._points(len(self._points), 1)*self._angle
 
-        """
-        these_points = self._points_handler(points)
-        return these_points.reshape(len(these_points), 1)*self._angle
-
-    def distances(self, points=None):
+    @property
+    def distances(self):
         """
         Calculates the distance from the start co-ordinate to the end
         co-ordinate on the sphere for all the parameterized points.
-
-        Parameters
-        ----------
-        points : `None`, `int`, `numpy.ndarray`
-            Number of points along the great arc.  If `None`, coordinates are
-            calculated at 100 equally spaced points along the arc.  If `int`,
-            coordinates are calculated at "points" equally spaced points along
-            the arc.  If a numpy.ndarray is passed, it must be one dimensional
-            and have values >=0 and <=1.  The values in this array correspond to
-            parameterized locations along the arc, with zero corresponding to
-            the initial coordinate and 1 corresponding to the last point of the
-            arc.
-
-        Returns
-        -------
-        distances : `~astropy.units`
-            Distances of the points along the great arc from the start to end
-            co-ordinate.  The units are defined as those returned after
-            transforming the co-ordinate system of the start co-ordinate into
-            its Cartesian equivalent.
         """
-        return self._radius * self.angles(points=points).value
+        return self._radius * self.angles.value
 
-    def coordinates(self, points=None):
+    @property
+    def coordinates(self):
         """
         Calculates the co-ordinates on the sphere from the start to the end
         co-ordinate for all the parameterized points.  Co-ordinates are
@@ -276,7 +241,7 @@ class GreatArc:
 
         """
         # Calculate the inner angles
-        these_angles = self.angles(points=points)
+        these_angles = self.angles
 
         # Calculate the Cartesian locations from the first to second points
         great_arc_points_cartesian = (self._v1[np.newaxis, :] * np.cos(these_angles) +
@@ -291,3 +256,38 @@ class GreatArc:
                         obstime=self._output_obstime,
                         observer=self._output_observer,
                         frame=Heliocentric).transform_to(self._output_frame)
+
+
+    @property
+    def visibility(self):
+        return self._visibility
+
+    @property
+    def all_on_front(self):
+        return np.all(self._visibility)
+
+    @property
+    def all_on_back(self):
+        return np.all(~self._visibility)
+
+    @property
+    def from_front_to_back(self):
+        if self.all_on_front or self.all_on_back:
+            return None
+        else:
+            test = self._change == -1
+            if np.any(test):
+                return np.where(test)[0][0]
+            else:
+                return None
+
+    @property
+    def from_back_to_front(self):
+        if self.all_on_front or self.all_on_back:
+            return None
+        else:
+            test = self._change == 1
+            if np.any(test):
+                return np.where(test)[0][0]
+            else:
+                return None
