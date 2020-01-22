@@ -240,12 +240,10 @@ class GreatArc:
             initial coordinate.
 
         """
-        # Calculate the inner angles
-        these_angles = self.angles
 
         # Calculate the Cartesian locations from the first to second points
-        great_arc_points_cartesian = (self._v1[np.newaxis, :] * np.cos(these_angles) +
-                                      self._v3[np.newaxis, :] * np.sin(these_angles) +
+        great_arc_points_cartesian = (self._v1[np.newaxis, :] * np.cos(self.angles) +
+                                      self._v3[np.newaxis, :] * np.sin(self.angles) +
                                       self._center_cartesian) * self._distance_unit
 
         # Return the coordinates of the great arc between the start and end
