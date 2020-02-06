@@ -10,7 +10,7 @@ from astropy.coordinates import SkyCoord
 from sunpy.coordinates import Heliocentric
 
 
-__all__ = ['GreatArc']
+__all__ = ['GreatArc', 'ArcVisibility']
 
 
 class GreatArc:
@@ -51,18 +51,6 @@ class GreatArc:
         target coordinate. If False, then the great arc is directed along the
         outer angle from the initial to the target coordinate.
 
-    Methods
-    -------
-    angles : `~astropy.units.rad`
-        Angles subtended by the points of the great arc.
-
-    distances : `~astropy.units`
-        Distances on the sphere of the points of the great arc.
-
-    coordinates : `~astropy.coordinates.SkyCoord`
-        Coordinates of the points of the great arc, returned in the coordinate
-        frame of the initial coordinate.
-
     References
     ----------
     [1] https://www.mathworks.com/matlabcentral/newsreader/view_thread/277881
@@ -82,7 +70,7 @@ class GreatArc:
     >>> great_arc = GreatArc(a, b)  # doctest: +REMOTE_DATA
     >>> ax = plt.subplot(projection=m)  # doctest: +SKIP
     >>> m.plot(axes=ax)  # doctest: +SKIP
-    >>> ax.plot_coord(great_arc.coordinates(), color='c')  # doctest: +SKIP
+    >>> ax.plot_coord(great_arc.coordinates, color='c')  # doctest: +SKIP
     >>> plt.show()  # doctest: +SKIP
 
     """
@@ -183,10 +171,6 @@ class GreatArc:
         # Distance on the sphere between the initial point and the target point.
         self._distance = self._radius * self._angle.value
 
-        # Calculate changes in the visibility of the arc coordinate
-        self._front = self.visibility.astype(np.int)
-        self._change = self._front[1:] - self._front[0:-1]
-
     @property
     def angles(self):
         """
@@ -229,6 +213,26 @@ class GreatArc:
                         obstime=self._output_obstime,
                         observer=self._output_observer,
                         frame=Heliocentric).transform_to(self._output_frame)
+
+
+class ArcVisibility:
+    """
+    Calculates visibility properties of a GreatArc object or a one-dimensional
+    SkyCoord.
+    """
+    def __init__(self, c):
+        if isinstance(c, GreatArc):
+            self.coordinates = c.coordinates
+        elif isinstance(c, SkyCoord):
+            if c.dim > 2:
+                raise ValueError('Input coordinates must be one-dimensional.')
+            self.coordinates = c
+        else:
+            raise ValueError('Input must be either a GreatArc object or a one-dimensional SkyCoord')
+
+        # Calculate changes in the visibility of the arc coordinate
+        self._front = self.visibility.astype(np.int)
+        self._change = self._front[1:] - self._front[0:-1]
 
     @property
     def visibility(self):
