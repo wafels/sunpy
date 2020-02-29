@@ -234,25 +234,6 @@ class GreatArc:
                         frame=Heliocentric).transform_to(self._output_frame)
 
 
-class ArcVisibility:
-    """
-    Calculates visibility properties of a GreatArc object or a one-dimensional
-    SkyCoord.
-    """
-    def __init__(self, c):
-        if isinstance(c, GreatArc):
-            self.coordinates = c.coordinates
-        elif isinstance(c, SkyCoord):
-            if c.dim > 2:
-                raise ValueError('Input coordinates must be one-dimensional.')
-            self.coordinates = c
-        else:
-            raise ValueError('Input must be either a GreatArc object or a one-dimensional SkyCoord')
-
-        # Calculate changes in the visibility of the arc coordinate
-        self._front = self.visibility.astype(np.int)
-        self._change = self._front[1:] - self._front[0:-1]
-
     @property
     def visibility(self):
         """
@@ -261,7 +242,7 @@ class ArcVisibility:
         plane of the sky.  If False, then the coordinate is behind the plane of
         the sky.
         """
-        return self.coordinates.transform_to(Heliocentric).z.value > 0
+        return self._visibility
 
     @property
     def all_on_front(self):
@@ -269,7 +250,7 @@ class ArcVisibility:
         Returns True if every arc coordinate is visible, False otherwise.  When
         True, every arc coordinate is visible from the arc's observer.
         """
-        return np.all(self.visibility)
+        return np.all(self._visibility)
 
     @property
     def all_on_back(self):
@@ -278,7 +259,7 @@ class ArcVisibility:
         True, every coordinate is on the back of the Sun as seen from the arc's
         observer.
         """
-        return np.all(~self.visibility)
+        return np.all(~self._visibility)
 
     @property
     def from_front_to_back(self):
