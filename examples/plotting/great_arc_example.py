@@ -104,19 +104,20 @@ stereo_map = sunpy.map.Map(stereo_image)
 aia = SkyCoord(500*u.arcsec, -320*u.arcsec, observer=aia_map.observer_coordinate, frame=Helioprojective)
 stereo = SkyCoord(-600*u.arcsec, 420*u.arcsec, observer=stereo_map.observer_coordinate, frame=Helioprojective)
 
-aia_gc = GreatArc(aia, stereo, points=1000, great_circle=True, use_inner_angle_direction=False)
+# Great circle as seen from AIA
+gc = GreatArc(aia, stereo, points=1000, great_circle=True, use_inner_angle_direction=False)
+aia_coordinates = gc.coordinates
+aia_visibility = gc.visibility
 
-# Visibility of the arc as seen from AIA.
-aia_visibility = coordinates.visibility
-
-# Visibility of the arc as seen from STEREO A.
-stereo_visibility = coordinates.transform_to(stereo.frame).transform_to(Heliocentric).z.value > 0
+# Great circle coordinates as seen from STEREO
+stereo_coordinates = gc.coordinates.transform_to(stereo.frame)
+stereo_visibility = stereo_coordinates.transform_to(Heliocentric).z.value > 0
 
 # The part of the arc which is visible from AIA and STEREO A.
-both = np.logical_and(aia_visibility.visibility, stereo_visibility.visibility)
+both = np.logical_and(aia_visibility, stereo_visibility)
 
 # The part of the arc which is not visible from either AIA or STEREO A.
-neither = np.logical_and(~aia_visibility.visibility, ~stereo_visibility.visibility)
+neither = np.logical_and(~aia_visibility, ~stereo_visibility)
 
 
 ###############################################################################
@@ -158,20 +159,20 @@ aia_map.plot(axes=ax1)
 visible_to_both = {"color": 'k', "label": 'visible to both'}
 visible_to_neither = {"color": 'r', "label": 'visible to neither'}
 
-ax1.plot_coord(coordinates[aia_front_arc_indices], **on_front)
-ax1.plot_coord(coordinates[aia_back_arc_indices], **on_back)
-ax1.plot_coord(coordinates[both], **visible_to_both)
-ax1.plot_coord(coordinates[neither], **visible_to_neither)
+ax1.plot_coord(aia_coordinates[aia_front_arc_indices], **on_front)
+ax1.plot_coord(aia_coordinates[aia_back_arc_indices], **on_back)
+ax1.plot_coord(aia_coordinates[both], **visible_to_both)
+ax1.plot_coord(aia_coordinates[neither], **visible_to_neither)
 ax1.plot_coord(aia, 'x', **initial)
 ax1.plot_coord(stereo, 'o', **target)
 plt.legend()
 
 ax2 = fig.add_subplot(1, 2, 2, projection=stereo_map)
 stereo_map.plot(axes=ax2)
-ax2.plot_coord(coordinates.transform_to(stereo.frame)[stereo_front_arc_indices], **on_front)
-ax2.plot_coord(coordinates.transform_to(stereo.frame)[stereo_back_arc_indices], **on_back)
-ax2.plot_coord(coordinates.transform_to(stereo.frame)[both], **visible_to_both)
-ax2.plot_coord(coordinates.transform_to(stereo.frame)[neither], **visible_to_neither)
+ax2.plot_coord(stereo_coordinates[stereo_front_arc_indices], **on_front)
+ax2.plot_coord(stereo_coordinates[stereo_back_arc_indices], **on_back)
+ax2.plot_coord(stereo_coordinates[both], **visible_to_both)
+ax2.plot_coord(stereo_coordinates[neither], **visible_to_neither)
 ax2.plot_coord(aia.transform_to(stereo.frame), 'x', **initial)
 ax2.plot_coord(stereo.transform_to(stereo.frame), 'o', **target)
 
