@@ -73,7 +73,7 @@ class GreatArc:
     >>> ax.plot_coord(great_arc.coordinates, color='c')  # doctest: +SKIP
     >>> plt.show()  # doctest: +SKIP
     """
-    def __init__(self, initial, target, center=None, points=100, great_circle=False, use_inner_angle_direction=True)
+    def __init__(self, initial, target, center=None, points=100, great_circle=False, use_inner_angle_direction=True):
         # Initial and target coordinates
         self.initial = initial
         self.target = target
