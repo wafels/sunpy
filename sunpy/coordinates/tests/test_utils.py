@@ -81,7 +81,7 @@ def test_great_arc_calculable(initial, target):
 # initialization of the GreatArc object.
 @pytest.mark.parametrize("points_requested, points_expected, first_point, last_point, last_inner_angle, last_distance",
                          # Test default
-                         [(None, 100, (600, -600), (-100, 800), 1.8683580432741789, 1300377.1981299),
+                         [(100, 100, (600, -600), (-100, 800), 1.8683580432741789, 1300377.1981299),
                           # Test int as an option
                           (3, 3, (600, -600), (-100, 800), 1.8683580432741789, 1300377.1981299),
                           # Test equally spaced monotonically increasing numpy
@@ -105,9 +105,9 @@ def test_great_arc_coordinates(points_requested, points_expected, first_point,
     a = SkyCoord(600*u.arcsec, -600*u.arcsec, frame=coordinate_frame)
     b = SkyCoord(-100*u.arcsec, 800*u.arcsec, frame=coordinate_frame)
     gc = GreatArc(a, b, points=points_requested)
-    coordinates = gc.coordinates()
-    angles = gc.angles()
-    distances = gc.distances()
+    coordinates = gc.coordinates
+    angles = gc.angles
+    distances = gc.distances
 
     # Ensure a GreatArc object is returned
     assert isinstance(gc, GreatArc)
@@ -186,33 +186,6 @@ def test_great_arc_wrongly_formatted_points(points, aia171_test_map):
     with pytest.raises(ValueError):
         GreatArc(a, b, points=points)
 
-    with pytest.raises(ValueError):
-        GreatArc(a, b).coordinates(points=points)
-
-    with pytest.raises(ValueError):
-        GreatArc(a, b).angles(points=points)
-
-    with pytest.raises(ValueError):
-        GreatArc(a, b).distances(points=points)
-
-    with pytest.raises(ValueError):
-        GreatArc(a, b).distances(points=points)
-
-
-# Test that the great arc code properly differentiates between the default
-# points and the requested points
-def test_great_arc_points_differentiates(aia171_test_map):
-    coordinate_frame = aia171_test_map.coordinate_frame
-    a = SkyCoord(600*u.arcsec, -600*u.arcsec, frame=coordinate_frame)
-    b = SkyCoord(-100*u.arcsec, 800*u.arcsec, frame=coordinate_frame)
-    gc = GreatArc(a, b)
-    coordinates = gc.coordinates(10)
-    angles = gc.angles(11)
-    distances = gc.distances(12)
-    assert len(coordinates) == 10 and len(gc.coordinates()) == 100
-    assert len(angles) == 11 and len(gc.angles()) == 100
-    assert len(distances) == 12 and len(gc.distances()) == 100
-
 
 # Test that the great arc code properly understands different observers
 # for the initial and target points
@@ -290,4 +263,3 @@ def test_great_arc_great_circle_and_directions(aia171_test_map):
     assert gc.use_inner_angle_direction is False
     np.testing.assert_almost_equal(gc._angle.value, -2*np.pi)
     assert gc._angle.unit == u.rad
-
