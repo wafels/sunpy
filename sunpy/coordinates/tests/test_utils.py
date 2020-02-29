@@ -263,3 +263,9 @@ def test_great_arc_great_circle_and_directions(aia171_test_map):
     assert gc.use_inner_angle_direction is False
     np.testing.assert_almost_equal(gc._angle.value, -2*np.pi)
     assert gc._angle.unit == u.rad
+
+
+# Test the visibility properties
+def test_visibility_properties(aia171_test_map):
+    # TODO
+    pass
