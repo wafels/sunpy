@@ -87,7 +87,7 @@ class GreatArc:
 
     """
 
-    def __init__(self, initial, target, center=None, points=None, great_circle=False, use_inner_angle_direction=True):
+    def __init__(self, initial, target, center=None, points=100, great_circle=False, use_inner_angle_direction=True):
 
         # Initial and target coordinates
         self.initial = initial
@@ -107,18 +107,6 @@ class GreatArc:
 
         # Target point of the great arc
         self._target = self.target.transform_to(self._output_frame).transform_to(Heliocentric)
-
-        # Parameterized location of points between the start and the end of the
-        # great arc.
-        # Default parameterized points location.
-        self._default_points = np.linspace(0, 1, 100)
-
-        # If the user requests a different set of default parameterized points
-        # on initiation of the object, then these become the default.  This
-        # allows the user to use the methods without having to specify their
-        # choice of points over and over again, while also allowing the
-        # flexibility in the methods to calculate other values.
-        self._default_points = self._points_handler(points)
 
         # Units of the initial point
         self._distance_unit = self._initial.cartesian.xyz.unit
@@ -182,9 +170,7 @@ class GreatArc:
 
         # Interpret the points keyword
         self.points = points
-        if self.points is None:
-            self._points = self._default_points
-        elif isinstance(self.points, int):
+        if isinstance(self.points, int):
             self._points = np.linspace(0, 1, self.points)
         elif isinstance(self.points, np.ndarray):
             if self.points.ndim > 1:
@@ -195,6 +181,8 @@ class GreatArc:
         else:
             raise ValueError('Incorrectly specified "points" keyword value.')
 
+        # Angles needed for the coordinate calculation
+        self._angles = self._points.reshape(len(self._points), 1)*self._angle.value
 
         # Calculate the visibility of the arc coordinates - coordinates in
         # front of the plane of the Sun are classed as visible
@@ -202,9 +190,10 @@ class GreatArc:
         self._front = self._visibility.astype(np.int)
         self._change = self._front[1:] - self._front[0:-1]
 
+
     @property
     def angles(self):
-        return self._points(len(self._points), 1)*self._angle
+        return self._points*self._angle
 
     @property
     def distances(self):
@@ -242,8 +231,8 @@ class GreatArc:
         """
 
         # Calculate the Cartesian locations from the first to second points
-        great_arc_points_cartesian = (self._v1[np.newaxis, :] * np.cos(self.angles) +
-                                      self._v3[np.newaxis, :] * np.sin(self.angles) +
+        great_arc_points_cartesian = (self._v1[np.newaxis, :] * np.cos(self._angles) +
+                                      self._v3[np.newaxis, :] * np.sin(self._angles) +
                                       self._center_cartesian) * self._distance_unit
 
         # Return the coordinates of the great arc between the start and end
