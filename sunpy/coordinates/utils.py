@@ -10,7 +10,7 @@ from astropy.coordinates import SkyCoord
 from sunpy.coordinates import Heliocentric
 
 
-__all__ = ['GreatArc']
+__all__ = ['GreatArc', 'ArcVisibility']
 
 
 class GreatArc:
@@ -51,18 +51,6 @@ class GreatArc:
         target coordinate. If False, then the great arc is directed along the
         outer angle from the initial to the target coordinate.
 
-    Methods
-    -------
-    angles : `~astropy.units.rad`
-        Angles subtended by the points of the great arc.
-
-    distances : `~astropy.units`
-        Distances on the sphere of the points of the great arc.
-
-    coordinates : `~astropy.coordinates.SkyCoord`
-        Coordinates of the points of the great arc, returned in the coordinate
-        frame of the initial coordinate.
-
     References
     ----------
     [1] https://www.mathworks.com/matlabcentral/newsreader/view_thread/277881
@@ -82,13 +70,10 @@ class GreatArc:
     >>> great_arc = GreatArc(a, b)  # doctest: +REMOTE_DATA
     >>> ax = plt.subplot(projection=m)  # doctest: +SKIP
     >>> m.plot(axes=ax)  # doctest: +SKIP
-    >>> ax.plot_coord(great_arc.coordinates(), color='c')  # doctest: +SKIP
+    >>> ax.plot_coord(great_arc.coordinates, color='c')  # doctest: +SKIP
     >>> plt.show()  # doctest: +SKIP
-
     """
-
-    def __init__(self, initial, target, center=None, points=100, great_circle=False, use_inner_angle_direction=True):
-
+    def __init__(self, initial, target, center=None, points=100, great_circle=False, use_inner_angle_direction=True)
         # Initial and target coordinates
         self.initial = initial
         self.target = target
@@ -121,6 +106,21 @@ class GreatArc:
                                     frame=Heliocentric)
         else:
             self._center = center.transform_to(self._output_frame).transform_to(Heliocentric)
+
+        # Interpret the points keyword
+        self.points = points
+        if self.points is None:
+            self._points = np.linspace(0, 1, 100)
+        elif isinstance(self.points, int):
+            self._points = np.linspace(0, 1, self.points)
+        elif isinstance(self.points, np.ndarray):
+            if self.points.ndim > 1:
+                raise ValueError('One dimensional numpy ndarrays only.')
+            if np.any(self.points < 0) or np.any(self.points > 1):
+                raise ValueError('All value in points array must be strictly >=0 and <=1.')
+            self._points = self.points
+        else:
+            raise ValueError('Incorrectly specified "points" keyword value.')
 
         # Did the user ask for a great circle?
         self.great_circle = great_circle
@@ -190,44 +190,33 @@ class GreatArc:
         self._front = self._visibility.astype(np.int)
         self._change = self._front[1:] - self._front[0:-1]
 
-
     @property
     def angles(self):
-        return self._points*self._angle
+        """
+        The angles subtended by the arc coordinates relative to the initial
+        coordinate.
+        """
+        return self._points * self._angle
 
     @property
     def distances(self):
         """
-        Calculates the distance from the start co-ordinate to the end
-        co-ordinate on the sphere for all the parameterized points.
+        The distance along the sphere for all the coordinates relative to the
+        initial coordinate.
         """
         return self._radius * self.angles.value
 
     @property
     def coordinates(self):
         """
-        Calculates the co-ordinates on the sphere from the start to the end
-        co-ordinate for all the parameterized points.  Co-ordinates are
-        returned in the frame of the start coordinate.
-
-        Parameters
-        ----------
-        points : `None`, `int`, `numpy.ndarray`
-            Number of points along the great arc.  If `None`, coordinates are
-            calculated at 100 equally spaced points along the arc.  If `int`,
-            coordinates are calculated at "points" equally spaced points along
-            the arc.  If a numpy.ndarray is passed, it must be one dimensional
-            and have values >=0 and <=1.  The values in this array correspond to
-            parameterized locations along the arc, with zero corresponding to
-            the initial coordinate and 1 corresponding to the last point of the
-            arc.
+        Calculates the co-ordinates of the arc, returned in the frame of
+        the start coordinate.
 
         Returns
         -------
         coordinates : `~astropy.coordinates.SkyCoord`
             Co-ordinates along the great arc in the co-ordinate frame of the
             initial coordinate.
-
         """
 
         # Calculate the Cartesian locations from the first to second points
@@ -245,20 +234,62 @@ class GreatArc:
                         frame=Heliocentric).transform_to(self._output_frame)
 
 
+class ArcVisibility:
+    """
+    Calculates visibility properties of a GreatArc object or a one-dimensional
+    SkyCoord.
+    """
+    def __init__(self, c):
+        if isinstance(c, GreatArc):
+            self.coordinates = c.coordinates
+        elif isinstance(c, SkyCoord):
+            if c.dim > 2:
+                raise ValueError('Input coordinates must be one-dimensional.')
+            self.coordinates = c
+        else:
+            raise ValueError('Input must be either a GreatArc object or a one-dimensional SkyCoord')
+
+        # Calculate changes in the visibility of the arc coordinate
+        self._front = self.visibility.astype(np.int)
+        self._change = self._front[1:] - self._front[0:-1]
+
     @property
     def visibility(self):
-        return self._visibility
+        """
+        The visibility of each of the arc coordinates as seen from the arc's
+        observer.  If a value is True, then the coordinate is in front of the
+        plane of the sky.  If False, then the coordinate is behind the plane of
+        the sky.
+        """
+        return self.coordinates.transform_to(Heliocentric).z.value > 0
 
     @property
     def all_on_front(self):
-        return np.all(self._visibility)
+        """
+        Returns True if every arc coordinate is visible, False otherwise.  When
+        True, every arc coordinate is visible from the arc's observer.
+        """
+        return np.all(self.visibility)
 
     @property
     def all_on_back(self):
-        return np.all(~self._visibility)
+        """
+        Returns True if every arc coordinate is not visible, False otherwise. When
+        True, every coordinate is on the back of the Sun as seen from the arc's
+        observer.
+        """
+        return np.all(~self.visibility)
 
     @property
     def from_front_to_back(self):
+        """
+        Returns the index at which the visibility of the arc switches from being
+        visible (on the disk of the Sun) to not visible (on the back of the Sun),
+        as seen by the arc's observer.  The index indicates the first coordinate
+        along the direction of the arc that is not visible from the arc's observer.
+        If all the arc coordinates are on the front or back of the visible disk of
+        the Sun as seen from the arc's viewpoint, None is returned.
+        """
         if self.all_on_front or self.all_on_back:
             return None
         else:
@@ -270,6 +301,14 @@ class GreatArc:
 
     @property
     def from_back_to_front(self):
+        """
+        Returns the index at which the visibility of the arc switches from being
+        not visible (on the back of the Sun) to visible (on the front of the Sun),
+        as seen by the arc's observer.  The index indicates the first coordinate
+        along the direction of the arc that is visible from the arc's observer.
+        If all the arc coordinates are on the front or back of the visible disk of
+        the Sun as seen from the arc's viewpoint, None is returned.
+        """
         if self.all_on_front or self.all_on_back:
             return None
         else:

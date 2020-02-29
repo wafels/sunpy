@@ -15,7 +15,7 @@ from astropy.coordinates import SkyCoord
 
 import sunpy.map
 from sunpy.coordinates.frames import Heliocentric, Helioprojective
-from sunpy.coordinates.utils import GreatArc
+from sunpy.coordinates.utils import GreatArc, ArcVisibility
 from sunpy.data.sample import AIA_171_IMAGE
 
 ###############################################################################
@@ -39,7 +39,7 @@ m.plot(axes=ax)
 on_front = {"color": 'y', "linewidth": 5, "label": 'visible'}
 initial = {"color": 'r', "label": 'initial'}
 target = {"color": 'r', "label": 'target'}
-ax.plot_coord(great_arc.coordinates(), **on_front)
+ax.plot_coord(great_arc.coordinates, **on_front)
 ax.plot_coord(start, 'x', **initial)
 ax.plot_coord(end, 'o', **target)
 plt.show()
@@ -47,7 +47,7 @@ plt.show()
 ###############################################################################
 # Now we can calculate the nearest integer pixels of the data that correspond
 # to the location of arc.
-pixels = np.asarray(np.rint(m.world_to_pixel(great_arc.coordinates())), dtype=int)
+pixels = np.asarray(np.rint(m.world_to_pixel(great_arc.coordinates)), dtype=int)
 x = pixels[0, :]
 y = pixels[1, :]
 
@@ -58,7 +58,7 @@ intensity_along_arc = m.data[y, x]
 ###############################################################################
 # Define the angular location of each pixel along the arc from the start point
 # to the end.
-angles = great_arc.angles().to(u.deg)
+angles = great_arc.angles.to(u.deg)
 
 ###############################################################################
 # Plot the intensity along the arc from the start to the end point.
@@ -73,56 +73,12 @@ plt.show()
 # The example above draws an arc along the inner angle directed from the start
 # to the end coordinate.  The outer angle can also be used to define the arc.
 great_arc = GreatArc(start, end, use_inner_angle_direction=False)
-coordinates = great_arc.coordinates()
+coordinates = great_arc.coordinates
 
 
-###############################################################################
-# Helper object that determines the properties of the great arc visibility.
-class GreatArcProperties:
-    def __init__(self, coordinates):
-        self.coordinates = coordinates
-        self._visibility = self.coordinates.transform_to(Heliocentric).z.value > 0
-        self._front = self._visibility.astype(np.int)
-        self._change = self._front[1:] - self._front[0:-1]
-
-    @property
-    def visibility(self):
-        return self._visibility
-
-    @property
-    def all_on_front(self):
-        return np.all(self._visibility)
-
-    @property
-    def all_on_back(self):
-        return np.all(~self._visibility)
-
-    @property
-    def from_front_to_back(self):
-        if self.all_on_front or self.all_on_back:
-            return None
-        else:
-            test = self._change == -1
-            if np.any(test):
-                return np.where(test)[0][0]
-            else:
-                return None
-
-    @property
-    def from_back_to_front(self):
-        if self.all_on_front or self.all_on_back:
-            return None
-        else:
-            test = self._change == 1
-            if np.any(test):
-                return np.where(test)[0][0]
-            else:
-                return None
-
-
-p = GreatArcProperties(coordinates)
-from_back_to_front = p.from_back_to_front
-from_front_to_back = p.from_front_to_back
+arc_visibility = ArcVisibility(coordinates)
+from_back_to_front = arc_visibility.from_back_to_front
+from_front_to_back = arc_visibility.from_front_to_back
 fig = plt.figure()
 ax = plt.subplot(projection=m)
 m.plot(axes=ax)
@@ -148,9 +104,7 @@ stereo_map = sunpy.map.Map(stereo_image)
 aia = SkyCoord(500*u.arcsec, -320*u.arcsec, observer=aia_map.observer_coordinate, frame=Helioprojective)
 stereo = SkyCoord(-600*u.arcsec, 420*u.arcsec, observer=stereo_map.observer_coordinate, frame=Helioprojective)
 
-ga = GreatArc(aia, stereo, great_circle=True, use_inner_angle_direction=False)
-coordinates = ga.coordinates(points=1000)
-
+aia_gc = GreatArc(aia, stereo, points=1000, great_circle=True, use_inner_angle_direction=False)
 
 # Visibility of the arc as seen from AIA.
 aia_visibility = coordinates.visibility
@@ -159,10 +113,10 @@ aia_visibility = coordinates.visibility
 stereo_visibility = coordinates.transform_to(stereo.frame).transform_to(Heliocentric).z.value > 0
 
 # The part of the arc which is visible from AIA and STEREO A.
-both = np.logical_and(aia_visibility, stereo_visibility)
+both = np.logical_and(aia_visibility.visibility, stereo_visibility.visibility)
 
 # The part of the arc which is not visible from either AIA or STEREO A.
-neither = np.logical_and(~aia_visibility, ~stereo_visibility)
+neither = np.logical_and(~aia_visibility.visibility, ~stereo_visibility.visibility)
 
 
 ###############################################################################
