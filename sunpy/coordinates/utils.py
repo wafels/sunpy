@@ -10,7 +10,7 @@ from astropy.coordinates import SkyCoord
 from sunpy.coordinates import Heliocentric
 
 
-__all__ = ['GreatArc', 'ArcVisibility']
+__all__ = ['GreatArc']
 
 
 class GreatArc:
