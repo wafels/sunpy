@@ -153,10 +153,10 @@ coordinates = ga.coordinates(points=1000)
 
 
 # Visibility of the arc as seen from AIA.
-aia_visibility = in_front_of_plane_of_sky(coordinates)
+aia_visibility = coordinates.visibility
 
 # Visibility of the arc as seen from STEREO A.
-stereo_visibility = in_front_of_plane_of_sky(coordinates.transform_to(stereo.frame))
+stereo_visibility = coordinates.transform_to(stereo.frame).transform_to(Heliocentric).z.value > 0
 
 # The part of the arc which is visible from AIA and STEREO A.
 both = np.logical_and(aia_visibility, stereo_visibility)
