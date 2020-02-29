@@ -109,9 +109,7 @@ class GreatArc:
 
         # Interpret the points keyword
         self.points = points
-        if self.points is None:
-            self._points = np.linspace(0, 1, 100)
-        elif isinstance(self.points, int):
+        if isinstance(self.points, int):
             self._points = np.linspace(0, 1, self.points)
         elif isinstance(self.points, np.ndarray):
             if self.points.ndim > 1:
