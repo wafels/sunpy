@@ -15,7 +15,7 @@ from astropy.coordinates import SkyCoord
 
 import sunpy.map
 from sunpy.coordinates.frames import Heliocentric, Helioprojective
-from sunpy.coordinates.utils import GreatArc, ArcVisibility
+from sunpy.coordinates.utils import GreatArc
 from sunpy.data.sample import AIA_171_IMAGE
 
 ###############################################################################
@@ -75,10 +75,8 @@ plt.show()
 great_arc = GreatArc(start, end, use_inner_angle_direction=False)
 coordinates = great_arc.coordinates
 
-
-arc_visibility = ArcVisibility(coordinates)
-from_back_to_front = arc_visibility.from_back_to_front
-from_front_to_back = arc_visibility.from_front_to_back
+from_back_to_front = great_arc.from_back_to_front
+from_front_to_back = great_arc.from_front_to_back
 fig = plt.figure()
 ax = plt.subplot(projection=m)
 m.plot(axes=ax)
