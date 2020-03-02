@@ -225,14 +225,11 @@ class GreatArc:
                         observer=self._output_observer,
                         frame=Heliocentric).transform_to(self._output_frame)
 
-    @property
-    def visibility(self):
-        return ArcVisibility(self.coordinates)
-
 
 class ArcVisibility:
-    def __init__(self, coordinates):
+    def __init__(self, coordinates, great_circle=False):
         self.coordinates = coordinates
+        self.great_circle = great_circle
         self._visibility = self.coordinates.transform_to(Heliocentric).z.value > 0
         self._front = self._visibility.astype(np.int)
         self._change = self._front[1:] - self._front[0:-1]
@@ -304,3 +301,7 @@ class ArcVisibility:
                 return np.where(test)[0][0]
             else:
                 return None
+
+    @property
+    def indices(self):
+        if self.great_circle:
