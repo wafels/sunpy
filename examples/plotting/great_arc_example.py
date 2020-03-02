@@ -105,11 +105,11 @@ stereo = SkyCoord(-600*u.arcsec, 420*u.arcsec, observer=stereo_map.observer_coor
 # Great circle as seen from AIA
 gc = GreatArc(aia, stereo, points=1000, great_circle=True, use_inner_angle_direction=False)
 aia_coordinates = gc.coordinates
-aia_visibility = gc.visibility
+aia_visibility = gc.visibility.visibility
 
 # Great circle coordinates as seen from STEREO
 stereo_coordinates = gc.coordinates.transform_to(stereo.frame)
-stereo_visibility = stereo_coordinates.transform_to(Heliocentric).z.value > 0
+stereo_visibility = ArcVisibility(stereo_coordinates)
 
 # The part of the arc which is visible from AIA and STEREO A.
 both = np.logical_and(aia_visibility, stereo_visibility)

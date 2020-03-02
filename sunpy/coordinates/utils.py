@@ -182,12 +182,6 @@ class GreatArc:
         # Angles needed for the coordinate calculation
         self._angles = self._points.reshape(len(self._points), 1)*self._angle.value
 
-        # Calculate the visibility of the arc coordinates - coordinates in
-        # front of the plane of the Sun are classed as visible
-        self._visibility = self.coordinates.transform_to(Heliocentric).z.value > 0
-        self._front = self._visibility.astype(np.int)
-        self._change = self._front[1:] - self._front[0:-1]
-
     @property
     def angles(self):
         """
@@ -231,6 +225,20 @@ class GreatArc:
                         observer=self._output_observer,
                         frame=Heliocentric).transform_to(self._output_frame)
 
+    @property
+    def visibility(self):
+        return ArcVisibility(self.coordinates)
+
+
+class ArcVisibility:
+    def __init__(self, coordinates):
+        self.coordinates = coordinates
+        self._visibility = self.coordinates.transform_to(Heliocentric).z.value > 0
+        self._front = self._visibility.astype(np.int)
+        self._change = self._front[1:] - self._front[0:-1]
+
+    def __invert__(self):
+        return ArcVisibility(~self._visibility)
 
     @property
     def visibility(self):
