@@ -15,7 +15,7 @@ from astropy.coordinates import SkyCoord
 
 import sunpy.map
 from sunpy.coordinates.frames import Heliocentric, Helioprojective
-from sunpy.coordinates.utils import GreatArc
+from sunpy.coordinates.utils import GreatArc, ArcVisibility
 from sunpy.data.sample import AIA_171_IMAGE
 
 ###############################################################################
@@ -74,9 +74,10 @@ plt.show()
 # to the end coordinate.  The outer angle can also be used to define the arc.
 great_arc = GreatArc(start, end, use_inner_angle_direction=False)
 coordinates = great_arc.coordinates
+arc_visibility = ArcVisibility(coordinates)
 
-from_back_to_front = great_arc.from_back_to_front
-from_front_to_back = great_arc.from_front_to_back
+from_back_to_front = arc_visibility.from_back_to_front
+from_front_to_back = arc_visibility.from_front_to_back
 fig = plt.figure()
 ax = plt.subplot(projection=m)
 m.plot(axes=ax)
@@ -109,7 +110,7 @@ aia_visibility = ArcVisibility(aia_coordinates, great_circle=gc.great_circle)
 
 # Great circle coordinates as seen from STEREO
 stereo_coordinates = gc.coordinates.transform_to(stereo.frame)
-stereo_visibility = ArcVisibility(stereo_coordinates)
+stereo_visibility = ArcVisibility(stereo_coordinates, great_circle=gc.great_circle)
 
 # The part of the arc which is visible from AIA and STEREO A.
 both = np.logical_and(aia_visibility.visibility, stereo_visibility.visibility)
