@@ -234,9 +234,6 @@ class ArcVisibility:
         self._front = self._visibility.astype(np.int)
         self._change = self._front[1:] - self._front[0:-1]
 
-    def __invert__(self):
-        return ArcVisibility(~self._visibility)
-
     @property
     def visibility(self):
         """
@@ -303,5 +300,19 @@ class ArcVisibility:
                 return None
 
     @property
-    def indices(self):
+    def great_circle_front_indices(self):
         if self.great_circle:
+            logic = np.roll(self.visibility, -self.from_back_to_front - 1)
+            indices = np.roll(np.arange(0, len(self.visibility)), -self.from_back_to_front - 1)
+            return indices[logic]
+        else:
+            return None
+
+    @property
+    def great_circle_back_indices(self):
+        if self.great_circle:
+            # TODO
+            return None
+        else:
+            return None
+

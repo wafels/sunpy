@@ -112,39 +112,19 @@ stereo_coordinates = gc.coordinates.transform_to(stereo.frame)
 stereo_visibility = ArcVisibility(stereo_coordinates)
 
 # The part of the arc which is visible from AIA and STEREO A.
-both = np.logical_and(aia_visibility, stereo_visibility)
+both = np.logical_and(aia_visibility.visibility, stereo_visibility.visibility)
 
 # The part of the arc which is not visible from either AIA or STEREO A.
-neither = np.logical_and(~aia_visibility, ~stereo_visibility)
-
-
-###############################################################################
-# Helper function to make a nice plot
-def great_circle_visibility_helper(visibility):
-    """
-    Find a set of indices such that the corresponding coordinates don't
-    flip from one side of the disk to another.
-
-    This function assumes that True means that the corresponding
-    coordinate is on the front side of the disk.
-    """
-    front = visibility.astype(np.int)
-    change = front[1:] - front[0:-1]
-    from_back_to_front = np.where(change == 1)[0][0]
-
-    logic = np.roll(visibility, -from_back_to_front - 1)
-    indices = np.roll(np.arange(0, len(visibility)), -from_back_to_front - 1)
-    return indices[logic]
-
+neither = np.logical_and(~aia_visibility.visibility, ~stereo_visibility.visibility)
 
 ###############################################################################
 # Determine the indices of the coordinates that are on and not on the
 # observable disk of the Sun as seen from AIA and STEREO
-aia_front_arc_indices = great_circle_visibility_helper(aia_visibility)
-aia_back_arc_indices = great_circle_visibility_helper(~aia_visibility)
+aia_front_arc_indices = aia_visibility.great_circle_front_indices
+aia_back_arc_indices = aia_visibility.great_circle_back_indices
 
-stereo_front_arc_indices = great_circle_visibility_helper(stereo_visibility)
-stereo_back_arc_indices = great_circle_visibility_helper(~stereo_visibility)
+stereo_front_arc_indices = stereo_visibility.great_circle_front_indices
+stereo_back_arc_indices = stereo_visibility.great_circle_back_indices
 
 ###############################################################################
 # Plot the great circle and its visibility on both the AIA and STEREO maps
