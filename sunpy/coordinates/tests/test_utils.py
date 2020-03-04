@@ -9,7 +9,7 @@ from sunpy.coordinates import sun
 import sunpy.map as smap
 import sunpy.data.test as test
 from sunpy.coordinates import frames
-from sunpy.coordinates.utils import GreatArc
+from sunpy.coordinates.utils import GreatArc, ArcVisibility
 
 
 @pytest.fixture
@@ -265,7 +265,7 @@ def test_great_arc_great_circle_and_directions(aia171_test_map):
     assert gc._angle.unit == u.rad
 
 
-# Test the visibility properties
+# ArcVisibility tests
 def test_visibility_properties(aia171_test_map):
     # TODO
     pass
