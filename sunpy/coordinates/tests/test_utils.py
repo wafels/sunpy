@@ -265,7 +265,45 @@ def test_great_arc_great_circle_and_directions(aia171_test_map):
     assert gc._angle.unit == u.rad
 
 
+def _stay_on_the_sphere(x, y, z, dx, dy):
+    """
+    Calculate the values dz for a point (x+dx, y+dy, z+dz) given the point (x,y,z) and the displacements dx and dy
+    with the constraint that that the point (x+dx, y+dy, z+dz) is at the same radius as the point (x,y,z).
+    :param x:
+    :param y:
+    :param z:
+    :param dx:
+    :param dy:
+    :return:
+    """
+    return np.roots(1, 2*z, 2*dx*x + 2*dy*y + dx*dx + dy*dy)
+
+
 # ArcVisibility tests
 def test_visibility_properties(aia171_test_map):
     # TODO
-    pass
+    # Test that the ArcVisibility object gives the correct results for arcs which are on the front or the back of the
+    # disk and go from front to back, etc.
+    on_front1 = SkyCoord(700 * u.arcsec, -100 * u.arcsec, frame=aia171_test_map.coordinate_frame).transform_to(frames.Heliocentric)
+    x, y, z = on_front1.x, on_front1.y, on_front1.z
+
+    # Calculate the required change(s) in z for coordinates that are slightly displaced from having an inner angle
+    # 180 degrees from the original (x, y, z) point.  In this construction, small displacements are given for the x and
+    # y coordinates and the change in the z coordinate is calculated in order the keep the resulting coordinate
+    # (x+dx, y+dy, z+dz) on the disk.  This is required because the great arc construction algorithm
+    # fails for points which are exactly 180 degrees away from the starting point.
+    # Small displacements
+    dx = 5000*u.km
+    dy = 3000*u.km
+    dz = _stay_on_the_sphere(-x, -y, -z, dx, dy)
+
+    # Coordinates that are definitely on the back of the disk
+    on_back1 = SkyCoord(-x + dx, -y + dy, -z + dz[0], frame=frames.Heliocentric, observer=on_front1.observer)
+    on_back2 = SkyCoord(-x + dx, -y + dy, -z + dz[1], frame=frames.Heliocentric, observer=on_front1.observer)
+
+    # A second coordinate that is definitely on the front of the disk
+    on_front2 = SkyCoord(680 * u.arcsec, -80 * u.arcsec, frame=aia171_test_map.coordinate_frame).transform_to(frames.Heliocentric)
+
+    #
+    gc_all_on_front = GreatArc(on_front1, on_front2)
+    gc_all_on_back = GreatArc(on_back1, on_back2)
