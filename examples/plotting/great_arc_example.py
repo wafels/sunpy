@@ -90,7 +90,6 @@ ax.plot_coord(end, 'o', **target)
 plt.show()
 
 
-
 ###############################################################################
 # Great circles can also be drawn using the GreatArc object.  The following
 # example creates a great circle that passes through two points on the solar
