@@ -227,9 +227,18 @@ class GreatArc:
 
 
 class ArcVisibility:
-    def __init__(self, coordinates, great_circle=False):
+    def __init__(self, coordinates):
+        """
+        Calculates the visibility properties of a SkyCoord with respect to the solar disk.
+        Although this object can be used with any input SkyCoord its primary purpose is
+        calculate the visibility properties of great arcs.
+
+        Parameters
+        ----------
+        coordinates : `~astropy.coordinates.SkyCoord`
+            Visibility properties are calculated for these coordinates.
+        """
         self.coordinates = coordinates
-        self.great_circle = great_circle
         self._visibility = self.coordinates.transform_to(Heliocentric).z.value > 0
         self._front = self._visibility.astype(np.int)
         self._change = self._front[1:] - self._front[0:-1]
@@ -300,30 +309,22 @@ class ArcVisibility:
                 return None
 
     @property
-    def great_circle_front_indices(self):
+    def front_indices(self):
         """
         Returns a set of indices for the input coordinates that describe a continuous arc on the Sun that is entirely on
-        the front of the disk of the Sun for great circles.  If the object is created with great_circle=False then no
-        indices are returned.
+        the front of the disk of the Sun for great circles.
         """
-        if self.great_circle:
-            logic = np.roll(self.visibility, -self.from_back_to_front - 1)
-            indices = np.roll(np.arange(0, len(self.visibility)), -self.from_back_to_front - 1)
-            return indices[logic]
-        else:
-            return None
+        logic = np.roll(self.visibility, -self.from_back_to_front - 1)
+        indices = np.roll(np.arange(0, len(self.visibility)), -self.from_back_to_front - 1)
+        return indices[logic]
 
     @property
-    def great_circle_back_indices(self):
+    def back_indices(self):
         """
         Returns a set of indices for the input coordinates that describe a continuous arc on the Sun that is entirely on
-        the front of the disk of the Sun for great circles.  If the object is created with great_circle=False then no
-        indices are returned.
+        the front of the disk of the Sun for great circles.
         """
-        if self.great_circle:
-            logic = np.roll(~self.visibility, -self.from_front_to_back - 1)
-            indices = np.roll(np.arange(0, len(self.visibility)), -self.from_front_to_back - 1)
-            return indices[logic]
-        else:
-            return None
+        logic = np.roll(~self.visibility, -self.from_front_to_back - 1)
+        indices = np.roll(np.arange(0, len(self.visibility)), -self.from_front_to_back - 1)
+        return indices[logic]\
 

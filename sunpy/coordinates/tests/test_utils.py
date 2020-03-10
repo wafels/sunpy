@@ -304,6 +304,48 @@ def test_visibility_properties(aia171_test_map):
     # A second coordinate that is definitely on the front of the disk
     on_front2 = SkyCoord(680 * u.arcsec, -80 * u.arcsec, frame=aia171_test_map.coordinate_frame).transform_to(frames.Heliocentric)
 
-    #
+    # Test that the correct properties are returned for an arc which is entirely on the front of the disk
     gc_all_on_front = GreatArc(on_front1, on_front2)
+    v = ArcVisibility(gc_all_on_front.coordinates)
+    assert np.all(v.visibility)
+    assert v.all_on_front
+    assert not v.all_on_back
+    assert v.from_front_to_back is None
+    assert v.from_back_to_front is None
+    assert v.back_indices is None
+    assert np.array_equal(v.front_indices, np.arange(0, len(gc_all_on_front.coordinates)))
+
+    # Test that the correct properties are returned for an arc which is entirely on the back of the disk
     gc_all_on_back = GreatArc(on_back1, on_back2)
+    v = ArcVisibility(gc_all_on_back.coordinates)
+    assert np.all(~v.visibility)
+    assert not v.all_on_front
+    assert v.all_on_back
+    assert v.from_front_to_back is None
+    assert v.from_back_to_front is None
+    assert v.front_indices is None
+    assert np.array_equal(v.back_indices, np.arange(0, len(gc_all_on_back.coordinates)))
+
+    # Test that the correct properties are returned for an arc which starts on the front and ends on the back
+    gc_front_to_back = GreatArc(on_front1, on_back1, points=[0.01, 0.02, 0.97, 0.98, 0.99])
+    v = ArcVisibility(gc_front_to_back.coordinates)
+    assert np.any(v.visibility)
+    assert np.any(~v.visibility)
+    assert not v.all_on_front
+    assert not v.all_on_back
+    assert v.from_front_to_back is not None
+    assert v.from_back_to_front is None
+    assert len(v.front_indices) == 2
+    assert len(v.back_indices) == 3
+
+    # Test that the correct properties are returned for an arc which starts on the back and ends on the front
+    gc_front_to_back = GreatArc(on_back2, on_front2, points=[0.01, 0.02, 0.97, 0.98, 0.99])
+    v = ArcVisibility(gc_front_to_back.coordinates)
+    assert np.any(v.visibility)
+    assert np.any(~v.visibility)
+    assert not v.all_on_front
+    assert not v.all_on_back
+    assert v.from_front_to_back is None
+    assert v.from_back_to_front is not None
+    assert len(v.front_indices) == 3
+    assert len(v.back_indices) == 2
