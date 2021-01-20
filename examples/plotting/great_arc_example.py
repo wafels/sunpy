@@ -15,8 +15,12 @@ from astropy.coordinates import SkyCoord
 
 import sunpy.map
 from sunpy.coordinates.frames import Heliocentric, Helioprojective
-from sunpy.coordinates.utils import GreatArc, ArcVisibility
+from sunpy.coordinates.utils import GreatArc, CoordinateVisibility
 from sunpy.data.sample import AIA_171_IMAGE
+
+from sunpy.net import Fido
+from sunpy.net import attrs as a
+
 
 ###############################################################################
 # We start with the sample data
@@ -73,18 +77,18 @@ plt.show()
 # The example above draws an arc along the inner angle directed from the start
 # to the end coordinate.  The outer angle can also be used to define the arc.
 great_arc = GreatArc(start, end, use_inner_angle_direction=False)
-coordinates = great_arc.coordinates
-arc_visibility = ArcVisibility(coordinates)
+ga = great_arc.coordinates
+v = CoordinateVisibility(ga)
 
-from_back_to_front = arc_visibility.from_back_to_front
-from_front_to_back = arc_visibility.from_front_to_back
+from_back_to_front = v.from_back_to_front
+from_front_to_back = v.from_front_to_back
 fig = plt.figure()
 ax = plt.subplot(projection=m)
 m.plot(axes=ax)
 on_back = {"color": 'c', "linewidth": 5, "label": 'not visible', "linestyle": ":"}
-ax.plot_coord(coordinates[0:from_front_to_back], **on_front)
-ax.plot_coord(coordinates[from_front_to_back+1: from_back_to_front], **on_back)
-ax.plot_coord(coordinates[from_back_to_front+1:], **on_front)
+ax.plot_coord(ga[0:from_front_to_back], **on_front)
+ax.plot_coord(ga[from_front_to_back+1: from_back_to_front], **on_back)
+ax.plot_coord(ga[from_back_to_front+1:], **on_front)
 ax.plot_coord(start, 'x', **initial)
 ax.plot_coord(end, 'o', **target)
 plt.show()
@@ -94,37 +98,48 @@ plt.show()
 # Great circles can also be drawn using the GreatArc object.  The following
 # example creates a great circle that passes through two points on the solar
 # surface, the first point seen from AIA and the second as seen from STEREO A.
-aia_image = '/Users/ireland/Data/jp2/20181127/2018_11_27__14_01_57_34__SDO_AIA_AIA_171.jp2'
-stereo_image = '/Users/ireland/Data/jp2/20181127/2018_11_27__14_09_02_833__STEREO-A_SECCHI_EUVI_171.jp2'
-aia_map = sunpy.map.Map(aia_image)
-stereo_map = sunpy.map.Map(stereo_image)
+stereo = (a.vso.Source('STEREO_B') &
+          a.Instrument("EUVI") &
+          a.Time('2011-01-01', '2011-01-01T00:10:00'))
 
-aia = SkyCoord(500*u.arcsec, -320*u.arcsec, observer=aia_map.observer_coordinate, frame=Helioprojective)
-stereo = SkyCoord(-600*u.arcsec, 420*u.arcsec, observer=stereo_map.observer_coordinate, frame=Helioprojective)
+aia = (a.Instrument.aia &
+       a.Sample(24 * u.hour) &
+       a.Time('2011-01-01', '2011-01-02'))
+
+wave = a.Wavelength(30 * u.nm, 31 * u.nm)
+
+res = Fido.search(wave, aia | stereo)
+files = Fido.fetch(res)
+
+m0 = sunpy.map.Map(files[0])
+m1 = sunpy.map.Map(files[1])
+
+initial = SkyCoord(500*u.arcsec, -320*u.arcsec, observer=m0.observer_coordinate, frame=Helioprojective)
+target = SkyCoord(-600*u.arcsec, 420*u.arcsec, observer=m1.observer_coordinate, frame=Helioprojective)
 
 # Great circle as seen from AIA
-gc = GreatArc(aia, stereo, points=1000, great_circle=True, use_inner_angle_direction=False)
-aia_coordinates = gc.coordinates
-aia_visibility = ArcVisibility(aia_coordinates, great_circle=gc.great_circle)
+great_circle = GreatArc(initial, target, points=1000, great_circle=True, use_inner_angle_direction=False)
+c0 = great_circle.coordinates
+c0v = CoordinateVisibility(c0)
 
 # Great circle coordinates as seen from STEREO
-stereo_coordinates = gc.coordinates.transform_to(stereo.frame)
-stereo_visibility = ArcVisibility(stereo_coordinates, great_circle=gc.great_circle)
+c1 = ac.transform_to(m1.coordinate_frame)
+c1v = CoordinateVisibility(c1)
 
 # The part of the arc which is visible from AIA and STEREO A.
-both = np.logical_and(aia_visibility.visibility, stereo_visibility.visibility)
+both = np.logical_and(c0.visible, c1.visible)
 
 # The part of the arc which is not visible from either AIA or STEREO A.
-neither = np.logical_and(~aia_visibility.visibility, ~stereo_visibility.visibility)
+neither = np.logical_and(~c0.visible, ~c1.visible)
 
 ###############################################################################
 # Determine the indices of the coordinates that are on and not on the
 # observable disk of the Sun as seen from AIA and STEREO
-aia_front_arc_indices = aia_visibility.great_circle_front_indices
-aia_back_arc_indices = aia_visibility.great_circle_back_indices
+front_arc_indices = c0v.great_circle_front_indices
+back_arc_indices = c0v.great_circle_back_indices
 
-stereo_front_arc_indices = stereo_visibility.great_circle_front_indices
-stereo_back_arc_indices = stereo_visibility.great_circle_back_indices
+stereo_front_arc_indices = sv.great_circle_front_indices
+stereo_back_arc_indices = sv.great_circle_back_indices
 
 ###############################################################################
 # Plot the great circle and its visibility on both the AIA and STEREO maps
@@ -137,20 +152,20 @@ aia_map.plot(axes=ax1)
 visible_to_both = {"color": 'k', "label": 'visible to both'}
 visible_to_neither = {"color": 'r', "label": 'visible to neither'}
 
-ax1.plot_coord(aia_coordinates[aia_front_arc_indices], **on_front)
-ax1.plot_coord(aia_coordinates[aia_back_arc_indices], **on_back)
-ax1.plot_coord(aia_coordinates[both], **visible_to_both)
-ax1.plot_coord(aia_coordinates[neither], **visible_to_neither)
+ax1.plot_coord(ac[aia_front_arc_indices], **on_front)
+ax1.plot_coord(ac[aia_back_arc_indices], **on_back)
+ax1.plot_coord(ac[both], **visible_to_both)
+ax1.plot_coord(ac[neither], **visible_to_neither)
 ax1.plot_coord(aia, 'x', **initial)
 ax1.plot_coord(stereo, 'o', **target)
 plt.legend()
 
 ax2 = fig.add_subplot(1, 2, 2, projection=stereo_map)
 stereo_map.plot(axes=ax2)
-ax2.plot_coord(stereo_coordinates[stereo_front_arc_indices], **on_front)
-ax2.plot_coord(stereo_coordinates[stereo_back_arc_indices], **on_back)
-ax2.plot_coord(stereo_coordinates[both], **visible_to_both)
-ax2.plot_coord(stereo_coordinates[neither], **visible_to_neither)
+ax2.plot_coord(sc[stereo_front_arc_indices], **on_front)
+ax2.plot_coord(sc[stereo_back_arc_indices], **on_back)
+ax2.plot_coord(sc[both], **visible_to_both)
+ax2.plot_coord(sc[neither], **visible_to_neither)
 ax2.plot_coord(aia.transform_to(stereo.frame), 'x', **initial)
 ax2.plot_coord(stereo.transform_to(stereo.frame), 'o', **target)
 

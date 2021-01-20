@@ -10,7 +10,7 @@ from astropy.coordinates import SkyCoord
 from sunpy.coordinates import Heliocentric
 
 
-__all__ = ['GreatArc']
+__all__ = ['CoordinateVisibility', 'GreatArc']
 
 
 class GreatArc:
@@ -181,7 +181,7 @@ class GreatArc:
 
         # Angles needed for the coordinate calculation
         self._angles = self._points.reshape(len(self._points), 1)*self._angle.value
-
+        
     @property
     def angles(self):
         """
@@ -226,7 +226,7 @@ class GreatArc:
                         frame=Heliocentric).transform_to(self._output_frame)
 
 
-class ArcVisibility:
+class CoordinateVisibility:
     def __init__(self, coordinates):
         """
         Calculates the visibility properties of a SkyCoord with respect to the solar disk.
@@ -239,19 +239,19 @@ class ArcVisibility:
             Visibility properties are calculated for these coordinates.
         """
         self.coordinates = coordinates
-        self._visibility = self.coordinates.transform_to(Heliocentric).z.value > 0
-        self._front = self._visibility.astype(np.int)
+        self._visible = self.coordinates.transform_to(Heliocentric).z.value > 0
+        self._front = self.visibility.visible.astype(np.int)
         self._change = self._front[1:] - self._front[0:-1]
 
     @property
-    def visibility(self):
+    def visible(self):
         """
         The visibility of each of the arc coordinates as seen from the arc's
         observer.  If a value is True, then the coordinate is in front of the
         plane of the sky.  If False, then the coordinate is behind the plane of
         the sky.
         """
-        return self._visibility
+        return self._visible
 
     @property
     def all_on_front(self):
@@ -259,7 +259,7 @@ class ArcVisibility:
         Returns True if every arc coordinate is visible, False otherwise.  When
         True, every arc coordinate is visible from the arc's observer.
         """
-        return np.all(self._visibility)
+        return np.all(self.visible)
 
     @property
     def all_on_back(self):
@@ -268,7 +268,7 @@ class ArcVisibility:
         True, every coordinate is on the back of the Sun as seen from the arc's
         observer.
         """
-        return np.all(~self._visibility)
+        return np.all(~self.visible)    
 
     @property
     def from_front_to_back(self):
@@ -314,8 +314,8 @@ class ArcVisibility:
         Returns a set of indices for the input coordinates that describe a continuous arc on the Sun that is entirely on
         the front of the disk of the Sun for great circles.
         """
-        logic = np.roll(self.visibility, -self.from_back_to_front - 1)
-        indices = np.roll(np.arange(0, len(self.visibility)), -self.from_back_to_front - 1)
+        logic = np.roll(self.visible, -self.from_back_to_front - 1)
+        indices = np.roll(np.arange(0, len(self._points)), -self.from_back_to_front - 1)
         return indices[logic]
 
     @property
@@ -324,7 +324,6 @@ class ArcVisibility:
         Returns a set of indices for the input coordinates that describe a continuous arc on the Sun that is entirely on
         the front of the disk of the Sun for great circles.
         """
-        logic = np.roll(~self.visibility, -self.from_front_to_back - 1)
-        indices = np.roll(np.arange(0, len(self.visibility)), -self.from_front_to_back - 1)
-        return indices[logic]\
-
+        logic = np.roll(~self.visible, -self.from_front_to_back - 1)
+        indices = np.roll(np.arange(0, len(self.points)), -self.from_front_to_back - 1)
+        return indices[logic]
