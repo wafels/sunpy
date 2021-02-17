@@ -7,9 +7,9 @@ import numpy as np
 import astropy.units as u
 from astropy.coordinates import BaseCoordinateFrame, SkyCoord
 
-from sunpy.coordinates import Heliocentric, get_body_heliographic_stonyhurst
+from sunpy.coordinates import Heliocentric, HeliographicCarrington, Helioprojective, get_body_heliographic_stonyhurst
 
-__all__ = ['GreatArc', 'get_rectangle_coordinates', 'solar_angle_equivalency']
+__all__ = ['GreatArc', 'get_rectangle_coordinates', 'solar_angle_equivalency', 'visible']
 
 
 class GreatArc:
@@ -436,3 +436,119 @@ def solar_angle_equivalency(observer):
               lambda x: np.arctan(x/sun_observer_distance))]
 
     return equiv
+
+
+def visible(coordinates, observer=None, known_to_be_on_or_above_sphere=False):
+    """Test to determine if the positions described by the coordinates
+    are visible from the observer `~astropy.coordinates.SkyCoord`.
+    "Visible" means it is possible to
+    draw a straight line (Euclidean geometry) from the observer position
+    to the coordinate position without penetrating the sphere of the Sun.
+    Light travel time, velocities, relativistic effects, or other
+    obscuring bodies are not taken into account by this function
+    when determining whether a coordinate is visible from the observer.
+
+    A value of `True` in the returned `~numpy.array` means that the
+    coordinate is visible.
+
+    From the point-of-view (POV) of the observer there are two classes
+    of visible coordinates: (1) coordinates that do not overlap with the
+    disk of the Sun from the POV of the observer, and (2) Coordinates that
+    do overlap with the disk of the Sun from the POV of the observer
+    that ALSO have a positive heliocentric Cartesian z-value AND are
+    also at least 1 solar radius away from solar center.
+
+    Parameters
+    ----------
+    coordinates : `~astropy.coordinates.SkyCoord`
+        The input coordinates.
+
+    observer : `None` | `~astropy.coordinates.SkyCoord`, optional
+        The location of the observer.  If a valid observer location is
+        passed in this location is used to calculate visibility. If
+        the keyword has the value `None` then the observer property
+        of the input coordinates are used to define the observer location.
+        If both the observer keyword and the observer property of the
+        coordinates are both `None` an error is raised.
+
+    known_to_be_on_or_above_sphere : `bool`, optional
+        If `False`, then calculate if the coordinates are at or above
+        the spherical solar surface. If `True`, then the coordinates
+        are assumed to be at or above the spherical solar surface. The test
+        as to whether the coordinates are at or above the solar surface is
+        performed by comparing the distance of the coordinates from the
+        solar center to the solar radius. Setting to `True` for coordinates
+        that are known to be at (or above) the spherical solar surface
+        skips this test and so skips the potential for an incorrect
+        determination due to precision errors rendering an incorrect
+        calculation the distance between solar center and the coordinate.
+
+    Returns
+    -------
+    `~numpy.array`
+        An array of Boolean values where `True` means that the coordinate
+        is visible from the observer.
+    """
+    # Define the frame of the observer in Heliocentric coordinates.
+
+    # Two types of coordinates - ones that have to carry an observer, and ones that do not.
+    if isinstance(coordinates.frame, (HeliographicCarrington, Heliocentric, Helioprojective)):
+        if coordinates.observer is None and observer is None:
+            raise ValueError('Either the input coordinate, or the observer keyword must define an observer position.')
+        if observer is not None:
+            o = observer
+        else:
+            o = coordinates.observer
+    else:
+        o = observer
+
+    if not isinstance(o, (BaseCoordinateFrame, SkyCoord)):
+        raise ValueError('The observer must be a SkyCoord or a coordinate frame.')
+    observer_frame = Heliocentric(observer=o)
+
+    # Observer is inside the Sun, so no coordinates are visible
+    if np.sqrt(np.sum(o.cartesian.x**2 + o.cartesian.y**2 + o.cartesian.z**2)) < constants.get('radius'):
+        return np.zeros(len(coordinates), dtype=bool)
+
+    # Coordinates of the observer in the observer frame
+    o_hcc = o.transform_to(observer_frame)
+    
+    # Coordinates transformed to the observer frame
+    c_hcc = coordinates.transform_to(observer_frame)
+    
+    # Solar angular radius as seen by the observer
+    sar =  solar_angular_radius(c_hcc.transform_to(Helioprojective))
+    
+    # Calculate the inner angle between the vector from the observer to solar center,
+    # and the vector from the observer to the coordinate. This is
+    # \cos\theta = \vector(A)\dot\vector(B) / \mod(A)\mod(B)
+    # The particular coordinate system chosen means that the numerator in the
+    # equation above is particularly simple.
+    dz = o_hcc.z - c_hcc.z
+    distance_from_sun_center = np.sqrt(c_hcc.x**2 + c_hcc.y**2 + d**2)
+    coordinate_angles = np.arccos(dz/distance_from_sun_center)
+
+    # Coordinate does not overlap with the location of the disk of
+    # the Sun as seen by the observer.
+    visible_off_disk = coordinate_angles > sar
+
+    # Cordinate DOES overlap with the location of disk of the Sun
+    # as seen by the observer AND is in front of the
+    # the plane of the Sun AND is at or above the solar surface
+    overlapping_the_disk = coordinate_angles <= sar
+
+    # In front of the plane perpendicular to line from the observer to solar center
+    in_front_of_plane = c_hcc.z > 0
+
+    # Coordinates are at or above the solar surface.
+    if not known_to_be_on_or_above_sphere:
+        at_or_above_solar_surface = distance_from_sun_center >= constants.get('radius')
+    else:
+        at_or_above_solar_surface = np.ones_like(in_front_of_plane, dtype=bool)
+
+    # True means the coordinate overlaps with the disk of the Sun, is in front of the z=0 plane, and is
+    # at or above the solar surface
+    visible_overlapping_disk = np.logical_and(overlapping_the_disk, np.logical_and(in_front_of_plane, at_or_above_solar_surface))
+    
+    # Return the visibility of the coordinates.
+    return np.logical_or(visible_off_disk, visible_overlapping_disk)
