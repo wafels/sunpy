@@ -8,7 +8,7 @@ from astropy.tests.helper import assert_quantity_allclose
 import sunpy.data.test as test
 import sunpy.map as smap
 from sunpy.coordinates import frames, get_earth, sun
-from sunpy.coordinates.utils import GreatArc, get_rectangle_coordinates, solar_angle_equivalency
+from sunpy.coordinates.utils import GreatArc, get_rectangle_coordinates, solar_angle_equivalency, visible
 
 
 @pytest.fixture
@@ -345,3 +345,35 @@ def test_solar_angle_equivalency_outputs():
 
     assert_quantity_allclose(distance_in_km, 717.25668*u.km)
     assert_quantity_allclose(distance_back_to_arcsec, distance_in_arcsec)
+
+
+def test_visible():
+    # A position on the surface on the Sun
+    on_surface_on_front = SkyCoord([-24, 10]*u.deg, (20, 30)*u.deg, obstime='2010-02-11 15:23:00', frame=frames.HeliographicStonyhurst)
+
+    # A position inside the Sun
+    observer_inside_sun = SkyCoord([64, -12]*u.deg, (4, -5)*u.deg, radius=(1000, -8967)*u.km, obstime='2010-02-11 15:23:00', frame=frames.HeliographicStonyhurst)
+    
+    # Visible from the coordinate's observer
+    looking_away_from_sun = SkyCoord([3, 1.1]*u.au, [2.5, 1.2]*u.au, [1.5, 1.01]*u.au,  obstime='2006-09-22 21:36:00', observer='earth', frame=frames.Heliocentric)
+    close_to_limb = SkyCoord(1000*u.arcsec, 94*u.arcsec, 1*u.au, obstime='1995-12-02 08:08:00', observer='earth', frame=frames.Helioprojective)
+
+    # Not visible from the coordinate's observer
+    hcc = on_surface_on_front.transform_to(frames.Heliocentric(observer='earth'))
+    on_surface_on_back = SkyCoord(-hcc.x, -hcc.y, -hcc.z,  obstime=hcc.obstime, observer=hcc.observer, frame=frames.Heliocentric)
+    behind_sun = SkyCoord([100, 256]*u.km, [98765, -976]*u.km, [1.1, 1.3]*u.au,  obstime='1998-04-02', observer='earth', frame=frames.Heliocentric)
+    coordinate_inside_sun = SkyCoord([2000, 4000]*u.km, [2000, 4000]*u.km, [2000, 4000]*u.km, obstime='2006-10-26 00:52:00', observer='venus', frame=frames.Heliocentric)
+
+    # test observer detection logic
+    with pytest.raises(ValueError):
+        visible(coordinates)
+
+    # These coordinates are visible from the coordinate's observer
+    assert np.all(visible(looking_away_from_sun))
+    assert np.all(visible(close_to_limb))
+    
+    # These coordinates are not visible from the coordinate's observer
+    assert np.all(~visible(on_surface_on_back))
+    assert np.all(~visible(coordinate_inside_sun))
+    assert np.all(~visible(observer_inside_sun))
+    
