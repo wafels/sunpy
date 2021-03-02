@@ -371,6 +371,10 @@ def test_visible():
     # These coordinates are visible from the coordinate's observer
     assert np.all(visible(looking_away_from_sun))
     assert np.all(visible(close_to_limb))
+
+    # Changing the solar angular radius should make points that
+    # are just off the limb appear to be on the disk
+    assert np.all(~visible(close_to_limb, sun_angular_radius=1*u.arcmin))
     
     # These coordinates are not visible from the coordinate's observer
     assert np.all(~visible(on_surface_on_back))
