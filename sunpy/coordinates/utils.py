@@ -438,7 +438,7 @@ def solar_angle_equivalency(observer):
     return equiv
 
 
-def visible(coordinates, observer=None, known_to_be_on_or_above_sphere=False):
+def visible(coordinates, observer=None, known_to_be_on_or_above_sphere=False, sun_angular_radius=None):
     """Test to determine if the positions described by the coordinates
     are visible from the observer `~astropy.coordinates.SkyCoord`.
     "Visible" means it is possible to
@@ -483,6 +483,13 @@ def visible(coordinates, observer=None, known_to_be_on_or_above_sphere=False):
         determination due to precision errors rendering an incorrect
         calculation the distance between solar center and the coordinate.
 
+    sun_angular_radius : `None`| `~astropy.units`, optional
+        The angular radius of the Sun as determind by the user. This
+        option allows users to specify the angular radius of the Sun
+        as seen by the observer. This option is supplied to allow users
+        to account for wavelength-dependent radii.
+
+
     Returns
     -------
     `~numpy.array`
@@ -517,8 +524,11 @@ def visible(coordinates, observer=None, known_to_be_on_or_above_sphere=False):
     c_hcc = coordinates.transform_to(observer_frame)
     
     # Solar angular radius as seen by the observer
-    sar =  solar_angular_radius(c_hcc.transform_to(Helioprojective))
-    
+    if sun_angular_radius is None:
+        sar =  solar_angular_radius(c_hcc.transform_to(Helioprojective))
+    else:
+        sar = sun_angular_radius
+        
     # Calculate the inner angle between the vector from the observer to solar center,
     # and the vector from the observer to the coordinate. This is
     # \cos\theta = \vector(A)\dot\vector(B) / \mod(A)\mod(B)
