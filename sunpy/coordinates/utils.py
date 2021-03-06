@@ -8,6 +8,7 @@ import astropy.units as u
 from astropy.coordinates import BaseCoordinateFrame, SkyCoord
 
 from sunpy.coordinates import Heliocentric, HeliographicCarrington, Helioprojective, get_body_heliographic_stonyhurst
+from sunpy.sun import constants
 
 __all__ = ['GreatArc', 'get_rectangle_coordinates', 'solar_angle_equivalency', 'visible']
 
@@ -535,8 +536,8 @@ def visible(coordinates, observer=None, known_to_be_on_or_above_sphere=False, su
     # The particular coordinate system chosen means that the numerator in the
     # equation above is particularly simple.
     dz = o_hcc.z - c_hcc.z
-    distance_from_sun_center = np.sqrt(c_hcc.x**2 + c_hcc.y**2 + d**2)
-    coordinate_angles = np.arccos(dz/distance_from_sun_center)
+    distance_from_observer = np.sqrt(c_hcc.x**2 + c_hcc.y**2 + dz**2)
+    coordinate_angles = np.arccos(dz/distance_from_observer)
 
     # Coordinate does not overlap with the location of the disk of
     # the Sun as seen by the observer.
@@ -551,6 +552,7 @@ def visible(coordinates, observer=None, known_to_be_on_or_above_sphere=False, su
     in_front_of_plane = c_hcc.z > 0
 
     # Coordinates are at or above the solar surface.
+    distance_from_sun_center = np.sqrt(c_hcc.x**2 + c_hcc.y**2 + c_hcc.z**2)
     if not known_to_be_on_or_above_sphere:
         at_or_above_solar_surface = distance_from_sun_center >= constants.get('radius')
     else:
