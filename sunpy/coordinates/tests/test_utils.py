@@ -365,10 +365,19 @@ def test_visible():
     coordinate_inside_sun = SkyCoord([2000, 4000]*u.km, [2000, 4000]*u.km, [2000, 4000]*u.km, obstime='2006-10-26 00:52:00', observer='venus', frame=frames.Heliocentric)
     observer_inside_sun = SkyCoord([3, 1.1]*u.au, [2.5, 1.2]*u.au, [1.5, 1.01]*u.au,  obstime='2006-09-22 21:36:00', observer=position_inside_sun, frame=frames.Heliocentric)
 
-    # test observer detection logic
-    #with pytest.raises(ValueError):
-    #    visible(coordinates)
+    # Tests that an error is raised because the observer is set but it is the wrong type.
+    with pytest.raises(ValueError):
+        visible(close_to_limb, observer='ISS')
 
+    # Tests that an error is raised because an observer is not carried  by the coordinate
+    # or explicitly set by the user
+    with pytest.raises(ValueError):
+        visible(no_observer_helioprojective, observer=None)
+    with pytest.raises(ValueError):
+        visible(no_observer_heliographic_carrington, observer=None)
+    with pytest.raises(ValueError):
+        visible(no_observer_heliographic_heliocentric, observer=None)
+        
     # These coordinates are visible from the coordinate's observer
     assert np.all(visible(looking_away_from_sun))
     assert np.all(visible(close_to_limb))
